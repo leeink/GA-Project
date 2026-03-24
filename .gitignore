@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# uv
+.venv/
+.uv/
+uv.lock
+
+# 환경변수
+.env
+.env.*
+!.env.example
+
+# FastAPI / uvicorn
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 빌드
+dist/
+build/
+*.egg-info/
+
+# api test
+test_main.http
