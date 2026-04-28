@@ -1,9 +1,14 @@
 from fastapi import FastAPI
+from pathlib import Path
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from app.router import auth_router, user_router
+from core.config import templates, STATIC_DIR
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 app.add_middleware(
     CORSMiddleware,
