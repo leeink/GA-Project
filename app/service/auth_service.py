@@ -1,18 +1,20 @@
 import secrets
 from datetime import datetime, timedelta, timezone
+
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
-from app.core.config import settings
-from app.core.exceptions import BadRequestException
-from app.core.security import verify_password, create_access_token
-from app.schema.auth_schema import LoginRequest, TokenResponse
-from app.model.refreshtoken import RefreshToken
-from app.service.user_service import find_user_by_email, find_user_by_id
+from core.config import settings
+from core.exceptions import BadRequestException
+from core.security import verify_password, create_access_token
+from schema.auth_schema import TokenResponse
+from model.refreshtoken import RefreshToken
+from service.user_service import find_user_by_email, find_user_by_id
 
 
-async def login(db: AsyncSession, data: LoginRequest) -> TokenResponse:
-    user = await find_user_by_email(db, data.email)
+async def login(db: AsyncSession, data: OAuth2PasswordRequestForm) -> TokenResponse:
+    user = await find_user_by_email(db, data.username)
 
     # Invalid email or password or Incorrect password
     if not user or not verify_password(data.password, user.password_hash):

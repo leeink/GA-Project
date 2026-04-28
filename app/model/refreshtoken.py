@@ -1,7 +1,8 @@
 import uuid
 from datetime import datetime
 
-from app.core.database import Base
+from core.database import Base
+
 
 from sqlalchemy import UUID, ForeignKey, Text, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,5 +23,3 @@ class RefreshToken(Base):
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-
-    user: Mapped["User"] = relationship("User")

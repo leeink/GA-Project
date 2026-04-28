@@ -3,5 +3,15 @@
 {% block title %}홈 - {{ site_name }}{% endblock %}
 
 {% block content %}
-
+    <form action="/user/sample" method="post">
+        <input type="text" name="email">
+        <input type="password" name="password">
+        <input type="submit" value="Login">
+    </form>
+    <div>
+        {{ data }}
+    </div>
+    {% if email %}
+        <p>{{ email }}</p>
+    {% endif %}
 {% endblock %}

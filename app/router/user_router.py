@@ -1,15 +1,16 @@
 import uuid
 
-from fastapi import APIRouter
-from fastapi.params import Depends
+from fastapi import APIRouter, Request
+from fastapi.params import Depends, Form
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.responses import HTMLResponse
 
-from app.model.user import User
-from app.core.database import get_db
-from app.core.exceptions import NotFoundException
-from app.core.security import get_current_user
-from app.schema.user_schema import UserResponse, UserCreateRequest
-from app.service.user_service import find_user_by_id, find_all_user, create_user
+from core.database import get_db
+from core.exceptions import NotFoundException
+from core.security import get_current_user
+from core.config import templates
+from schema.user_schema import UserResponse, UserCreateRequest
+from service.user_service import find_user_by_id, find_all_user, create_user
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -21,7 +22,7 @@ async def get_users(db: AsyncSession = Depends(get_db)):
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     return current_user

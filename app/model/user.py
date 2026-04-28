@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, Boolean, DateTime
 
-from app.core.database import Base
+from core.database import Base
 
 class User(Base):
     __tablename__ = "siteuser"

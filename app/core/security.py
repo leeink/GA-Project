@@ -8,8 +8,8 @@ from pwdlib.hashers.argon2 import Argon2Hasher
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
-from app.core.database import get_db
+from core.config import settings
+from core.database import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 

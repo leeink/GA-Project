@@ -1,11 +1,10 @@
 import uuid
 from typing import Any, Sequence
-from uuid import UUID
 
-from app.core.security import hash_password
-from app.model.user import User
-from app.schema.user_schema import UserCreateRequest
-from app.core.exceptions import *
+from core.security import hash_password
+from model.user import User
+from schema.user_schema import UserCreateRequest
+from core.exceptions import *
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
