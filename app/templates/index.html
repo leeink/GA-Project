@@ -1,17 +1,10 @@
-{% extends "base.html" %}
-
-{% block title %}홈 - {{ site_name }}{% endblock %}
-
 {% block content %}
-    <form action="/user/sample" method="post">
-        <input type="text" name="email">
-        <input type="password" name="password">
-        <input type="submit" value="Login">
+    {# 여기에서 상품명 전송하기 #}
+    <form action="" method="post">
+        <input type="text" name="name">
+        <input type="submit" value="전송">
     </form>
     <div>
-        {{ data }}
+        {# 여기에 데이터들 출력하기 #}
     </div>
-    {% if email %}
-        <p>{{ email }}</p>
-    {% endif %}
 {% endblock %}

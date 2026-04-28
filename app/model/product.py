@@ -5,8 +5,6 @@ from sqlalchemy import String, Integer, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
-from cart import Cart
-from sales_record import SalesRecord
 
 
 class CategoryType(str, enum.Enum):

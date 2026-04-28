@@ -5,7 +5,6 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.database import Base
-from product import Product
 
 
 class SalesRecord(Base):
