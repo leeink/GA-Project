@@ -1,10 +1,445 @@
+{% extends "base.html" %}
+
+{% block title %}글로벌프레시존 | 냉동식품 전문몰{% endblock %}
+
 {% block content %}
-    {# 여기에서 상품명 전송하기 #}
-    <form action="" method="post">
-        <input type="text" name="name">
-        <input type="submit" value="전송">
-    </form>
-    <div>
-        {# 여기에 데이터들 출력하기 #}
+{# 상단 고정 메뉴: 브랜드명, 상품 목록 이동, 품질관리 이동, 선택 상품 개수를 보여준다. #}
+<header class="topbar">
+    <a class="brand" href="#top" aria-label="글로벌프레시 홈">
+        <span class="brand-mark">F</span>
+        <span>글로벌프레시</span>
+    </a>
+    <nav class="nav" aria-label="주요 메뉴">
+        <button class="nav-link" type="button" data-scroll-target="#products">인기상품</button>
+        <a href="#quality">품질관리</a>
+        <span class="selection-pill">선택 <span id="cartCount">0</span>개</span>
+    </nav>
+</header>
+
+{# 첫 화면 소개 영역: 쇼핑몰 핵심 문구와 배송/보장 정보를 보여준다. #}
+<section class="hero" id="top">
+    <div class="hero-copy">
+        <span class="eyebrow">오늘 주문, 내일 차갑게 도착</span>
+        <h1>냉동실을 든든하게 채우는 한 끼</h1>
+        <p>식사부터 반찬, 안주, 아이들 간식까지. 급속 냉동으로 맛과 식감을 지킨 냉동식품을 합리적인 가격으로 만나보세요.</p>
+        <div class="hero-actions">
+            <button class="btn btn-primary" type="button" data-scroll-target="#products">상품 보기</button>
+            <a class="btn btn-ghost" href="#delivery">배송 안내</a>
+        </div>
+        <div class="hero-stats" aria-label="서비스 요약">
+            <div class="stat">
+                <strong>-18도</strong>
+                <span>콜드체인 포장</span>
+            </div>
+            <div class="stat">
+                <strong>3만원</strong>
+                <span>이상 무료배송</span>
+            </div>
+            <div class="stat">
+                <strong>24시간</strong>
+                <span>신선 보장 접수</span>
+            </div>
+        </div>
     </div>
+</section>
+
+<main>
+    {# 상품 목록 영역: 검색, 카테고리 필터, 상품 카드, 주문 요약을 포함한다. #}
+    <section id="products" aria-labelledby="productsTitle">
+        <div class="section-head">
+            <div>
+                <h2 id="productsTitle">잘 팔리는 냉동식품</h2>
+                <p>식사와 분식 메뉴를 골고루 준비했습니다.</p>
+            </div>
+            <div class="filters" aria-label="상품 필터">
+                <button class="filter active" type="button" data-filter="all">전체</button>
+                <button class="filter" type="button" data-filter="meal">식사</button>
+                <button class="filter" type="button" data-filter="snack">간식</button>
+            </div>
+        </div>
+
+        {# 상품명 검색 폼: product_router.py의 /product/search 라우터로 검색어를 보낸다. #}
+        <form class="product-search" action="/product/search" method="get">
+            <input
+                type="text"
+                name="name"
+                value="{{ search or '' }}"
+                placeholder="상품명을 입력하세요"
+                aria-label="상품명 검색"
+            >
+            <button class="btn btn-primary" type="submit">검색</button>
+        </form>
+
+        <div class="shop-layout">
+            {# JavaScript가 DB에서 받은 상품 데이터를 카드 형태로 렌더링하는 위치다. #}
+            <div class="products" id="productGrid"></div>
+
+            {# 선택한 상품 수량과 결제 예정 금액을 화면에서 계산해 보여주는 주문 요약 영역이다. #}
+            <div class="inline-order" aria-labelledby="orderSummaryTitle">
+                <div class="order-summary">
+                    <h3 id="orderSummaryTitle">선택 상품</h3>
+                    <p class="empty" id="selectedItemsText">상품 카드에서 수량을 선택해 주세요.</p>
+                    <div class="summary-row">
+                        <span>상품 금액</span>
+                        <strong id="subtotal">0원</strong>
+                    </div>
+                    <div class="summary-row">
+                        <span>배송비</span>
+                        <strong id="deliveryFee">0원</strong>
+                    </div>
+                    <div class="summary-row total">
+                        <span>결제 예정</span>
+                        <strong id="total">0원</strong>
+                    </div>
+                    <p class="notice">3만원 이상 구매 시 무료배송입니다. 냉동 포장재와 드라이아이스가 함께 출고됩니다.</p>
+                </div>
+                <form class="order-form" id="orderForm">
+                    <h3>배송 정보</h3>
+                    <div class="field">
+                        <label for="customerName">주문자명</label>
+                        <input id="customerName" name="name" type="text" autocomplete="name" required>
+                    </div>
+                    <div class="field">
+                        <label for="customerPhone">연락처</label>
+                        {# name 속성이 없어서 화면 입력만 받고 서버 전송 데이터에는 포함하지 않는다. #}
+                        <input id="customerPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+                    </div>
+                    <div class="field">
+                        <label for="customerAddress">배송 주소</label>
+                        <input id="customerAddress" name="address" type="text" autocomplete="street-address" required>
+                    </div>
+                    <div class="field">
+                        <label for="customerMemo">배송 요청사항</label>
+                        {# name 속성이 없어서 화면 입력만 받고 서버 전송 데이터에는 포함하지 않는다. #}
+                        <textarea id="customerMemo" placeholder="예: 문 앞에 놓아주세요."></textarea>
+                    </div>
+                    <p class="form-message" id="orderMessage" aria-live="polite"></p>
+                    <button class="btn btn-primary checkout" type="submit">주문하기</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    {# 상품 카드를 클릭했을 때 목록 대신 상세 화면을 보여주는 영역이다. #}
+    <section class="product-page" id="productPage" hidden aria-live="polite"></section>
+
+    {# 배송/품질 안내 카드 영역이다. #}
+    <section class="features" id="delivery" aria-label="배송 및 품질 혜택">
+        <article class="feature">
+            <div class="feature-icon">01</div>
+            <h3>콜드체인 배송</h3>
+            <p>출고부터 문 앞까지 냉동 상태를 유지하는 보냉 포장으로 보냅니다.</p>
+        </article>
+        <article class="feature">
+            <div class="feature-icon">02</div>
+            <h3>간편한 재구매</h3>
+            <p>자주 먹는 메뉴를 중심으로 구성해 장보기 시간을 줄여줍니다.</p>
+        </article>
+        <article class="feature" id="quality">
+            <div class="feature-icon">03</div>
+            <h3>선별 입고</h3>
+            <p>보관 온도와 유통기한을 확인한 상품만 판매합니다.</p>
+        </article>
+        <article class="feature">
+            <div class="feature-icon">04</div>
+            <h3>든든한 구성</h3>
+            <p>한 끼 식사, 야식, 아이 간식까지 냉동실 상황에 맞게 고를 수 있습니다.</p>
+        </article>
+    </section>
+
+    {# 이메일 구독 폼 영역이다. 현재는 화면에서 알림만 띄운다. #}
+    <section class="band" aria-labelledby="newsletterTitle">
+        <div>
+            <h2 id="newsletterTitle">이번 주 특가를 먼저 받아보세요</h2>
+            <p>신상품 입고, 묶음 할인, 시즌 메뉴 소식을 이메일로 보내드립니다.</p>
+        </div>
+        <form class="newsletter">
+            <input type="email" aria-label="이메일 주소" placeholder="email@example.com">
+            <button class="btn btn-primary" type="submit">구독하기</button>
+        </form>
+    </section>
+</main>
+
+<footer>
+    <span>글로벌프레시 냉동식품 전문몰</span>
+    <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
+</footer>
+
+<script>
+    // 상품명과 로컬 이미지 파일을 연결한다. DB 상품명이 이 이름과 같으면 해당 이미지가 사용된다.
+    const productImageByName = {
+        "삼겹살 구이": "/static/images/products/pork-belly.png",
+        "소불고기 덮밥": "/static/images/products/bulgogi-rice.png",
+        "새우볶음밥": "/static/images/products/shrimp-fried-rice.png",
+        "치킨 도리아": "/static/images/products/chicken-doria.png",
+        "낙지볶음 도시락": "/static/images/products/spicy-octopus-lunchbox.png",
+        "모짜렐라 스틱": "/static/images/products/mozzarella-sticks.png",
+        "감자튀김": "/static/images/products/french-fries.png",
+        "오징어링": "/static/images/products/calamari-rings.png",
+        "핫도그": "/static/images/products/corn-dog.png",
+        "치즈볼": "/static/images/products/cheese-balls.png"
+    };
+
+    // 상품명에 맞는 이미지가 없을 때 카테고리별 기본 이미지를 사용한다.
+    const fallbackImageByCategory = {
+        meal: "/static/images/products/bulgogi-rice.png",
+        snack: "/static/images/products/french-fries.png"
+    };
+
+    // FastAPI에서 전달한 products 데이터를 JavaScript 상품 배열로 변환한다.
+    const products = [
+        {% for product in products %}
+        {
+            id: {{ product.id|string|tojson }},
+            name: {{ product.name|tojson }},
+            category: {{ product.category.value|tojson }},
+            storageType: {{ product.storage_type.value|tojson }},
+            badge: {{ ("간편식" if product.category.value == "meal" else "간식")|tojson }},
+            icon: {{ ("🍱" if product.category.value == "meal" else "🧀")|tojson }},
+            price: {{ product.cost or 0 }},
+            quantity: {{ product.quantity or 0 }},
+            imageIndex: {{ loop.index0 }},
+            desc: {{ ("재고 " ~ (product.quantity or 0) ~ "개 · " ~ ("냉동 보관" if product.storage_type.value == "frozen" else "신선 보관"))|tojson }},
+            bg: {{ ("linear-gradient(135deg, #e5f7f5, #fff2d6)" if product.category.value == "meal" else "linear-gradient(135deg, #ffe9df, #f5f7fb)")|tojson }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ].map(product => ({
+        ...product,
+        imageUrl: productImageByName[product.name] || fallbackImageByCategory[product.category]
+    }));
+
+    // 브라우저 안에서만 사용하는 임시 장바구니다. 현재 DB cart 테이블과 직접 연결되어 있지는 않다.
+    const cart = new Map();
+    let currentFilter = "{{ category or 'all' }}";
+    let selectedProductId = null;
+
+    // 자주 사용하는 화면 요소를 미리 찾아둔다.
+    const productsSection = document.querySelector("#products");
+    const productGrid = document.querySelector("#productGrid");
+    const productPage = document.querySelector("#productPage");
+    const cartCount = document.querySelector("#cartCount");
+    const selectedItemsText = document.querySelector("#selectedItemsText");
+    const subtotalEl = document.querySelector("#subtotal");
+    const deliveryFeeEl = document.querySelector("#deliveryFee");
+    const totalEl = document.querySelector("#total");
+    const orderForm = document.querySelector("#orderForm");
+    const orderMessage = document.querySelector("#orderMessage");
+
+    const formatWon = value => value.toLocaleString("ko-KR") + "원";
+
+    // 장바구니에서 특정 상품의 선택 수량을 가져온다.
+    function productQuantity(productId) {
+        return cart.get(productId)?.qty || 0;
+    }
+
+    // 상품 배열을 현재 필터에 맞춰 카드 목록으로 그린다.
+    function renderProducts(filter = "all") {
+        const visibleProducts = products.filter(product => filter === "all" || product.category === filter);
+
+        if (!visibleProducts.length) {
+            productGrid.innerHTML = `<p class="empty product-empty">상품이 없습니다.</p>`;
+            return;
+        }
+
+        productGrid.innerHTML = visibleProducts
+            .map(product => `
+                <article class="product${product.id === selectedProductId ? " active" : ""}" data-id="${product.id}" tabindex="0" aria-label="${product.name} 상세 보기">
+                    <div class="product-media" style="--media-bg: ${product.bg}">
+                        <img class="product-photo" src="${product.imageUrl}" alt="${product.name}" loading="lazy">
+                        <span class="badge">${product.badge}</span>
+                    </div>
+                    <div class="product-body">
+                        <h3>${product.name}</h3>
+                        <p class="product-desc">${product.desc}</p>
+                        <div class="product-bottom">
+                            <span class="price">${formatWon(product.price)}</span>
+                            <button class="view-product" type="button" data-id="${product.id}">상품 보기</button>
+                        </div>
+                    </div>
+                </article>
+            `).join("");
+    }
+
+    // 선택한 상품의 상세 화면과 수량 선택 버튼을 그린다.
+    function renderProductDetail() {
+        const product = products.find(item => item.id === selectedProductId);
+
+        if (!product) {
+            productPage.hidden = true;
+            productPage.innerHTML = "";
+            productsSection.hidden = false;
+            return;
+        }
+
+        const qty = productQuantity(product.id);
+        productPage.hidden = false;
+        productsSection.hidden = true;
+        productPage.innerHTML = `
+            <div class="product-detail" style="--media-bg: ${product.bg}">
+                <div class="detail-media">
+                    <img class="detail-photo" src="${product.imageUrl}" alt="${product.name}">
+                    <span class="badge">${product.badge}</span>
+                </div>
+                <div class="detail-body">
+                    <div class="detail-top">
+                        <div>
+                            <span class="eyebrow">${product.badge}</span>
+                            <h3>${product.name}</h3>
+                        </div>
+                        <button class="detail-close" type="button" data-action="back">목록으로</button>
+                    </div>
+                    <p>${product.desc}</p>
+                    <div class="detail-order">
+                        <span class="price">${formatWon(product.price)}</span>
+                        <strong>${formatWon(product.price * qty)}</strong>
+                    </div>
+                    <div class="count-box">
+                        <span>수량 선택</span>
+                        <div class="qty" aria-label="${product.name} 선택 수량">
+                            <button type="button" data-action="decrease" data-id="${product.id}" aria-label="${product.name} 수량 줄이기">-</button>
+                            <strong>${qty}</strong>
+                            <button type="button" data-action="increase" data-id="${product.id}" aria-label="${product.name} 수량 늘리기">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 장바구니 수량, 상품 금액, 배송비, 결제 예정 금액을 다시 계산해 화면에 반영한다.
+    function renderCart() {
+        const items = [...cart.values()];
+        const count = items.reduce((sum, item) => sum + item.qty, 0);
+        const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
+        const deliveryFee = subtotal === 0 || subtotal >= 30000 ? 0 : 3000;
+
+        cartCount.textContent = count;
+        selectedItemsText.textContent = items.length
+            ? items.map(item => `${item.name} ${item.qty}개`).join(", ")
+            : "상품 카드에서 수량을 선택해 주세요.";
+        subtotalEl.textContent = formatWon(subtotal);
+        deliveryFeeEl.textContent = formatWon(deliveryFee);
+        totalEl.textContent = formatWon(subtotal + deliveryFee);
+    }
+
+    // 상품 카드를 클릭하면 해당 상품의 상세 화면으로 전환한다.
+    productGrid.addEventListener("click", event => {
+        const card = event.target.closest(".product");
+        if (!card) return;
+
+        selectedProductId = card.dataset.id;
+        renderProducts(currentFilter);
+        renderProductDetail();
+        productPage.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    // 키보드 접근성을 위해 Enter/Space로도 상품 상세 화면을 열 수 있게 한다.
+    productGrid.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+
+        const card = event.target.closest(".product");
+        if (!card) return;
+
+        event.preventDefault();
+        selectedProductId = card.dataset.id;
+        renderProducts(currentFilter);
+        renderProductDetail();
+        productPage.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    // 상세 화면에서 목록 이동, 수량 증가, 수량 감소 버튼을 처리한다.
+    productPage.addEventListener("click", event => {
+        const button = event.target.closest("button[data-action]");
+        if (!button) return;
+
+        if (button.dataset.action === "back") {
+            selectedProductId = null;
+            renderProducts(currentFilter);
+            renderProductDetail();
+            productsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+            return;
+        }
+
+        const product = products.find(item => item.id === button.dataset.id);
+        if (!product) return;
+
+        if (button.dataset.action === "increase") {
+            const current = cart.get(product.id);
+            cart.set(product.id, { ...product, qty: current ? current.qty + 1 : 1 });
+        } else {
+            const current = cart.get(product.id);
+            if (!current) return;
+
+            current.qty -= 1;
+            if (current.qty <= 0) {
+                cart.delete(product.id);
+            }
+        }
+
+        renderProducts(currentFilter);
+        renderProductDetail();
+        renderCart();
+    });
+
+    // 전체/식사/간식 필터 버튼을 누르면 상품 목록을 다시 그린다.
+    document.querySelectorAll(".filter").forEach(button => {
+        if (button.dataset.filter === currentFilter) {
+            document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
+            button.classList.add("active");
+        }
+
+        button.addEventListener("click", () => {
+            document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
+            button.classList.add("active");
+            currentFilter = button.dataset.filter;
+            if (selectedProductId && currentFilter !== "all") {
+                const selected = products.find(product => product.id === selectedProductId);
+                if (selected?.category !== currentFilter) {
+                    selectedProductId = null;
+                    renderProductDetail();
+                }
+            }
+            renderProducts(currentFilter);
+        });
+    });
+
+    // data-scroll-target 속성이 있는 버튼을 누르면 해당 영역으로 부드럽게 이동한다.
+    document.querySelectorAll("[data-scroll-target]").forEach(button => {
+        button.addEventListener("click", () => {
+            document.querySelector(button.dataset.scrollTarget).scrollIntoView({
+                behavior: "smooth"
+            });
+        });
+    });
+
+    // 구독 폼은 실제 저장 없이 화면 알림만 보여준다.
+    document.querySelector(".newsletter").addEventListener("submit", event => {
+        event.preventDefault();
+        event.currentTarget.reset();
+        alert("구독 신청이 완료되었습니다.");
+    });
+
+    // 주문 폼은 현재 DB 저장 API와 연결되어 있지 않아 안내 문구만 보여준다.
+    orderForm.addEventListener("submit", event => {
+        event.preventDefault();
+        const orderItems = Object.fromEntries(
+            [...cart.entries()].map(([productId, product]) => [productId, product.qty])
+        );
+
+        console.log("주문완료!");
+        fetch('/product/order', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                item: orderItems,
+                address: document.querySelector("#customerAddress").value
+            })
+        })
+    });
+
+    // 페이지가 처음 열릴 때 상품 목록, 상세 영역, 장바구니 요약을 초기화한다.
+    renderProducts(currentFilter);
+    renderProductDetail();
+    renderCart();
+</script>
 {% endblock %}
