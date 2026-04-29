@@ -6,3 +6,4 @@ import uuid
 
 class OrderSchema(BaseModel):
     item: Dict[uuid.UUID, int]
+    address: str

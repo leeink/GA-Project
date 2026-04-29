@@ -18,5 +18,6 @@ class SalesRecord(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("siteuser.id"), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     sales_price: Mapped[int] = mapped_column(Integer, nullable=False)
+    address: Mapped[str] = mapped_column(String, nullable=False)
 
     product: Mapped["Product"] = relationship(back_populates="sales_records")
