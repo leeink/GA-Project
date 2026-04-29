@@ -1,7 +1,197 @@
 {% extends 'admin_base.html' %}
-{% block title %}{{ site_name }}{% endblock %}
+{% block title %}{{ year }}년 매출 현황{% endblock %}
+{% block topbar_subtitle %}{{ year }}년 연간 매출 현황{% endblock %}
+
 {% block content %}
-    <main>
-        <p>{{ year }}</p>
-    </main>
+
+{# ── 연 매출 요약 헤더 ── #}
+<div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
+    <div>
+        <div class="page-title">{{ year }}년 매출 현황</div>
+        <div class="page-subtitle">연간 매출 데이터 요약</div>
+    </div>
+    <div style="text-align:right;">
+        <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">연 매출 합계</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:700;
+                    color:var(--accent-green); letter-spacing:-0.5px;">
+            ₩{{ "{:,}".format(yearly_total) }}
+        </div>
+    </div>
+</div>
+
+{# ── 분기별 + 월별 (2열) ── #}
+<div class="grid-2" style="margin-bottom:16px;">
+
+    {# 분기별 도넛 #}
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">분기별 매출 비율</div>
+                <div class="card-subtitle">{{ year }}년 1 – 4분기</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:24px;">
+            <div style="position:relative; width:200px; height:200px; flex-shrink:0;">
+                <canvas id="donutChart"></canvas>
+                <div style="position:absolute; inset:0; display:flex; flex-direction:column;
+                            align-items:center; justify-content:center; pointer-events:none;">
+                    <span style="font-size:11px; color:var(--text-muted);">총 매출</span>
+                    <span id="donut-total" style="font-size:15px; font-weight:700;
+                          color:var(--text-primary); letter-spacing:-0.3px;"></span>
+                </div>
+            </div>
+            <div id="donut-legend" style="display:flex; flex-direction:column; gap:10px; flex:1;"></div>
+        </div>
+    </div>
+
+    {# 월별 꺾은선 #}
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">월별 매출 실적</div>
+                <div class="card-subtitle">{{ year }}년 1 – 12월</div>
+            </div>
+        </div>
+        <canvas id="lineChart" style="max-height:220px;"></canvas>
+    </div>
+
+</div>
+
+{# ── 상품별 막대 ── #}
+<div class="card">
+    <div class="card-header">
+        <div>
+            <div class="card-title">상품별 매출</div>
+            <div class="card-subtitle">매출 기준 내림차순</div>
+        </div>
+    </div>
+    <canvas id="barChart" style="max-height:280px;"></canvas>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+const QUARTERLY = {{ quarterly_data | tojson }};
+const MONTHLY   = {{ monthly_data   | tojson }};
+const P_LABELS  = {{ product_labels | tojson }};
+const P_DATA    = {{ product_data   | tojson }};
+
+const GREEN  = ['#2d6a4f','#40916c','#52b788','#95d5b2'];
+const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+function fmtWon(v) {
+    if (v >= 100_000_000) return '₩' + (v / 100_000_000).toFixed(1) + '억';
+    if (v >= 10_000)      return '₩' + (v / 10_000).toFixed(0) + '만';
+    return '₩' + v.toLocaleString();
+}
+
+// ── 도넛 차트 ──
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+new Chart(donutCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['1분기','2분기','3분기','4분기'],
+        datasets: [{
+            data: QUARTERLY,
+            backgroundColor: GREEN,
+            borderWidth: 2,
+            borderColor: '#ffffff',
+            hoverOffset: 6,
+        }]
+    },
+    options: {
+        cutout: '68%',
+        plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ` ${ctx.label}: ${fmtWon(ctx.raw)}` }
+        }},
+    }
+});
+
+// 도넛 중앙 합계 & 범례
+const totalQ = QUARTERLY.reduce((a, b) => a + b, 0);
+document.getElementById('donut-total').textContent = fmtWon(totalQ);
+
+const legend = document.getElementById('donut-legend');
+['1분기','2분기','3분기','4분기'].forEach((label, i) => {
+    const pct = totalQ > 0 ? ((QUARTERLY[i] / totalQ) * 100).toFixed(1) : '0.0';
+    legend.innerHTML += `
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="width:10px; height:10px; border-radius:3px; background:${GREEN[i]};
+                         flex-shrink:0; display:inline-block;"></span>
+            <span style="font-size:12px; color:var(--text-secondary); flex:1;">${label}</span>
+            <span style="font-size:12px; font-weight:600; color:var(--text-primary);">${pct}%</span>
+        </div>`;
+});
+
+// ── 꺾은선 차트 ──
+const lineCtx = document.getElementById('lineChart').getContext('2d');
+const lineGrad = lineCtx.createLinearGradient(0, 0, 0, 220);
+lineGrad.addColorStop(0, 'rgba(64,145,108,0.25)');
+lineGrad.addColorStop(1, 'rgba(64,145,108,0)');
+
+new Chart(lineCtx, {
+    type: 'line',
+    data: {
+        labels: MONTHS,
+        datasets: [{
+            label: '월별 매출',
+            data: MONTHLY,
+            borderColor: '#40916c',
+            backgroundColor: lineGrad,
+            borderWidth: 2,
+            pointRadius: 4,
+            pointBackgroundColor: '#40916c',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            fill: true,
+            tension: 0.4,
+        }]
+    },
+    options: {
+        plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
+        }},
+        scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: {
+                font: { size: 11 },
+                callback: v => fmtWon(v)
+            }}
+        }
+    }
+});
+
+// ── 막대 차트 ──
+const barCtx = document.getElementById('barChart').getContext('2d');
+new Chart(barCtx, {
+    type: 'bar',
+    data: {
+        labels: P_LABELS,
+        datasets: [{
+            label: '매출',
+            data: P_DATA,
+            backgroundColor: P_DATA.map((_, i) =>
+                `rgba(45,106,79,${1 - i * (0.6 / Math.max(P_DATA.length, 1))})`
+            ),
+            borderRadius: 6,
+            borderSkipped: false,
+        }]
+    },
+    options: {
+        indexAxis: P_DATA.length > 8 ? 'y' : 'x',  // 상품 많으면 가로 막대
+        plugins: { legend: { display: false }, tooltip: {
+            callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
+        }},
+        scales: {
+            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: {
+                font: { size: 11 },
+                callback: v => typeof v === 'number' ? fmtWon(v) : v
+            }}
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -4,18 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/admin_base.css') }}">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.0/chart.umd.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav>
-        <ul>
-            <li><a href="/">대시보드</a></li>
-            <li><a href="/">연도별 집계</a></li>
-        </ul>
-    </nav>
-    {% block content %}
-    {% endblock %}
+<div class="layout">
+    <!-- Side Bar -->
+    {% include 'sidebar.html' %}
+    <!-- ── Main ── -->
+    <div class="main">
+
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="topbar-title">
+                {% block topbar_title %}
+                글로벌냉동식품
+                <small>{% block topbar_subtitle %}관리자 페이지{% endblock %}</small>
+                {% endblock %}
+            </div>
+
+            <div class="topbar-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" placeholder="검색…">
+            </div>
+
+            <div class="topbar-actions">
+                <button class="topbar-icon-btn" title="알림">
+                    <div class="badge"></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                    </svg>
+                </button>
+                <div class="topbar-avatar" title="Admin">A</div>
+            </div>
+        </header>
+
+        <!-- Content -->
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div><!-- /.main -->
+</div>
 </body>
 </html>
