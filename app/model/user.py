@@ -1,9 +1,9 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 from sqlalchemy.dialects.postgresql import UUID
 
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, Boolean, DateTime
+from sqlalchemy import String, Boolean, DateTime, Date
 
 from core.database import Base
 
@@ -19,3 +19,5 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now(timezone.utc), nullable=False)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    gender: Mapped[str] = mapped_column(String, nullable=False)
+    birth_date: Mapped[date] = mapped_column(Date, nullable=True)

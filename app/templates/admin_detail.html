@@ -6,10 +6,47 @@
 
 {# ── 연 매출 요약 헤더 ── #}
 <div class="page-header" style="display:flex; align-items:center; justify-content:space-between;">
-    <div>
-        <div class="page-title">{{ year }}년 매출 현황</div>
-        <div class="page-subtitle">연간 매출 데이터 요약</div>
+    <div style="display:flex; align-items:center; gap:12px;">
+        <div>
+            <div class="page-title">{{ year }}년 매출 현황</div>
+            <div class="page-subtitle">연간 매출 데이터 요약</div>
+        </div>
+
+        {# ── 연도 드롭다운 ── #}
+        <div style="position:relative;">
+            <select id="year-select"
+                    onchange="location.href='/admin/detail/' + this.value"
+                    style="
+                        appearance: none;
+                        -webkit-appearance: none;
+                        background: var(--card-bg);
+                        border: 1px solid var(--card-border);
+                        border-radius: 8px;
+                        padding: 7px 32px 7px 12px;
+                        font-size: 13px;
+                        font-family: inherit;
+                        font-weight: 500;
+                        color: var(--text-primary);
+                        cursor: pointer;
+                        outline: none;
+                        box-shadow: var(--card-shadow);
+                    ">
+                {% for y in available_years %}
+                <option value="{{ y }}" {{ 'selected' if y == year|int else '' }}>
+                    {{ y }}년
+                </option>
+                {% endfor %}
+            </select>
+            {# 드롭다운 화살표 아이콘 #}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                        width:13px; height:13px; color:var(--text-muted); pointer-events:none;">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        </div>
     </div>
+
     <div style="text-align:right;">
         <div style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">연 매출 합계</div>
         <div style="font-family:'Plus Jakarta Sans',sans-serif; font-size:24px; font-weight:700;
@@ -165,6 +202,14 @@ new Chart(lineCtx, {
 
 // ── 막대 차트 ──
 const barCtx = document.getElementById('barChart').getContext('2d');
+const isHorizontal = P_DATA.length > 8;
+
+const BAR_COLORS = [
+    '#2d6a4f','#40916c','#52b788','#74c69d','#1b4332',
+    '#e76f51','#f4a261','#e9c46a','#264653','#2a9d8f',
+    '#6a4c93','#1982c4','#ff595e','#8ac926','#ff924c',
+];
+
 new Chart(barCtx, {
     type: 'bar',
     data: {
@@ -172,24 +217,38 @@ new Chart(barCtx, {
         datasets: [{
             label: '매출',
             data: P_DATA,
-            backgroundColor: P_DATA.map((_, i) =>
-                `rgba(45,106,79,${1 - i * (0.6 / Math.max(P_DATA.length, 1))})`
-            ),
+            backgroundColor: P_DATA.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]),
             borderRadius: 6,
             borderSkipped: false,
         }]
     },
     options: {
-        indexAxis: P_DATA.length > 8 ? 'y' : 'x',  // 상품 많으면 가로 막대
-        plugins: { legend: { display: false }, tooltip: {
-            callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
-        }},
+        indexAxis: isHorizontal ? 'y' : 'x',
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
+            }
+        },
         scales: {
-            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
-            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: {
-                font: { size: 11 },
-                callback: v => typeof v === 'number' ? fmtWon(v) : v
-            }}
+            x: {
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: isHorizontal
+                        ? v => fmtWon(v)
+                        : (_, index) => P_LABELS[index]  // ← index로 상품명 참조
+                }
+            },
+            y: {
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: isHorizontal
+                        ? (_, index) => P_LABELS[index]  // ← index로 상품명 참조
+                        : v => fmtWon(v)
+                }
+            }
         }
     }
 });

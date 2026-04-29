@@ -58,3 +58,14 @@ async def find_yearly_total(db: AsyncSession, year: str):
     )
     row = result.one_or_none()
     return int(row.total_sales) if row and row.total_sales else 0
+
+async def find_available_years(db: AsyncSession) -> list[int]:
+    """매출 데이터가 있는 연도 목록 (내림차순)"""
+    result = await db.execute(
+        select(
+            extract("year", SalesRecord.sold_at).label("year")
+        )
+        .group_by(extract("year", SalesRecord.sold_at))
+        .order_by(extract("year", SalesRecord.sold_at).desc())
+    )
+    return [int(row.year) for row in result.all()]
