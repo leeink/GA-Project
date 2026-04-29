@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Form, Request
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import HTMLResponse
+from starlette.responses import HTMLResponse, RedirectResponse
 
 from core.database import get_db
 from core.config import templates
@@ -27,3 +27,9 @@ async def product_search(request: Request, name: str = "", db: AsyncSession = De
 async def product_by_category(request: Request, category: str = "", db: AsyncSession = Depends(get_db)):
     products = await find_product_by_category(db, category) if category else await find_all_product(db)
     return templates.TemplateResponse(request, "index.html", {"products": products, "category": category})
+
+@router.post('/order', response_class=HTMLResponse)
+async def order(dto: OrderSchema, db: AsyncSession = Depends(get_db)):
+    await product_order(db, dto)
+
+    return RedirectResponse(url="/product", status_code=302)

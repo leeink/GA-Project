@@ -10,7 +10,7 @@ async def find_quarterly_sales(db: AsyncSession, year: str):
     result = await db.execute(
         select(
             extract("quarter", SalesRecord.sold_at).label("quarter"),
-            func.sum(SalesRecord.sales_price * SalesRecord.quantity).label("total_sales")
+            func.sum(SalesRecord.sales_price).label("total_sales")
         )
         .where(extract("year", SalesRecord.sold_at) == int(year))
         .group_by(extract("quarter", SalesRecord.sold_at))
@@ -24,7 +24,7 @@ async def find_monthly_sales(db: AsyncSession, year: str):
     result = await db.execute(
         select(
             extract("month", SalesRecord.sold_at).label("month"),
-            func.sum(SalesRecord.sales_price * SalesRecord.quantity).label("total_sales")
+            func.sum(SalesRecord.sales_price).label("total_sales")
         )
         .where(extract("year", SalesRecord.sold_at) == int(year))
         .group_by(extract("month", SalesRecord.sold_at))
@@ -38,12 +38,12 @@ async def find_product_sales(db: AsyncSession, year: str):
     result = await db.execute(
         select(
             Product.name.label("product_name"),
-            func.sum(SalesRecord.sales_price * SalesRecord.quantity).label("total_sales")
+            func.sum(SalesRecord.sales_price).label("total_sales")
         )
         .join(Product, SalesRecord.product_id == Product.id)
         .where(extract("year", SalesRecord.sold_at) == int(year))
         .group_by(Product.id, Product.name)
-        .order_by(func.sum(SalesRecord.sales_price * SalesRecord.quantity).desc())
+        .order_by(func.sum(SalesRecord.sales_price).desc())
     )
     return result.all()  # [(product_name, total_sales), ...]
 
@@ -52,7 +52,7 @@ async def find_yearly_total(db: AsyncSession, year: str):
     """연 매출 합계"""
     result = await db.execute(
         select(
-            func.sum(SalesRecord.sales_price * SalesRecord.quantity).label("total_sales")
+            func.sum(SalesRecord.sales_price).label("total_sales")
         )
         .where(extract("year", SalesRecord.sold_at) == int(year))
     )
