@@ -28,8 +28,8 @@ async def product_by_category(request: Request, category: str = "", db: AsyncSes
     products = await find_product_by_category(db, category) if category else await find_all_product(db)
     return templates.TemplateResponse(request, "index.html", {"products": products, "category": category})
 
-@router.post('/order', response_class=HTMLResponse)
+@router.post('/order')
 async def order(dto: OrderSchema, db: AsyncSession = Depends(get_db)):
     await product_order(db, dto)
 
-    return RedirectResponse(url="/product", status_code=302)
+    return RedirectResponse(url="/product", status_code=303)
