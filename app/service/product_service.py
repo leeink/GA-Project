@@ -46,7 +46,7 @@ async def product_order(db: AsyncSession, dto: OrderSchema):
 
     # 4. Insert할 데이터를 리스트로 준비
     sales_records = []
-    for p_id, qty, adr in dto.item.items():
+    for p_id, qty in dto.item.items():
         product = products[p_id]
         sales_records.append({
             "product_id": p_id,
