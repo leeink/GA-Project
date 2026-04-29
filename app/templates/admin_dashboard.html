@@ -11,23 +11,23 @@
     </div>
 </div>
 
-{# 하단 왼쪽: 도넛 차트 (판매량 비중) #}
+{# 중단: 왼쪽(도넛) + 오른쪽(막대) #}
 <div style="display: flex; gap: 20px;">
     <div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
-        <div class="card-title">많이 팔린 상품 TOP 5 (판매량 기준)</div>
-        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
-        <div style="height: 300px; position: relative;">
+        <div class="card-title">매출 순위 상품 TOP 5 (총액 기준)</div>
+         <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
+        <div style="height: 250px;">
             <canvas id="donutChart"></canvas>
         </div>
     </div>
     
-{# 3. 하단 오른쪽: 막대 차트 (금액 기준) #}
+    {# 3. 중단 오른쪽: 막대 차트 (금액 기준) #}
 <div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
     <div class="card-title">매출 순위 상품 TOP 5 (총액 기준)</div>
-     <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
-    <div style="height: 300px;">
-        <canvas id="barChart"></canvas>
-    </div>
+    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
+        <div style="height: 250px;">
+            <canvas id="barChart"></canvas>
+        </div>
     </div>
 </div>
 
@@ -63,38 +63,93 @@ async function initDashboard() {
 
     const totalQuantity = dataBest.reduce((sum, item) => sum + item.total_quantity, 0);
 
+    const externalLabelsPlugin = {
+        id: 'externalLabels',
+        afterDraw(chart) {
+            const { ctx, chartArea: { left, right, top, bottom } } = chart;
+            const centerX = (left + right) / 2;
+            const centerY = (top + bottom) / 2;
+
+            chart.data.datasets.forEach((dataset, i) => {
+                const meta = chart.getDatasetMeta(i);
+                meta.data.forEach((element, index) => {
+                    if (meta.hidden || chart.getDataVisibility(index) === false || dataset.data[index] === 0) return;
+
+                    const { startAngle, endAngle, outerRadius, innerRadius } = element;
+                    const midAngle = startAngle + (endAngle - startAngle) / 2;
+
+                    // 1. 도넛 내부 퍼센트 그리기
+                    const innerRadiusPos = (outerRadius + innerRadius) / 2;
+                    const innerX = centerX + Math.cos(midAngle) * innerRadiusPos;
+                    const innerY = centerY + Math.sin(midAngle) * innerRadiusPos;
+                    const percentage = ((dataset.data[index] / totalQuantity) * 100).toFixed(0) + '%';
+
+                    ctx.save();
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(percentage, innerX, innerY);
+
+                    // 2. 외부 선 (ㄱ자) 그리기
+                    const startX = centerX + Math.cos(midAngle) * outerRadius;
+                    const startY = centerY + Math.sin(midAngle) * outerRadius;
+                    const elbowX = centerX + Math.cos(midAngle) * (outerRadius + 15);
+                    const elbowY = centerY + Math.sin(midAngle) * (outerRadius + 15);
+                    const isRight = Math.cos(midAngle) > 0;
+                    const endX = elbowX + (isRight ? 15 : -15);
+                    const endY = elbowY;
+
+                    ctx.beginPath();
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(elbowX, elbowY);
+                    ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = dataset.backgroundColor[index];
+                    ctx.lineWidth = 1.5;
+                    ctx.stroke();
+
+                    // 3. 외부 텍스트 (상품명 + 수량) 그리기
+                    const labelText = `${chart.data.labels[index]} (${dataset.data[index].toLocaleString()}개)`;
+                    ctx.fillStyle = '#333';
+                    ctx.font = 'bold 12px sans-serif';
+                    ctx.textAlign = isRight ? 'left' : 'right';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(labelText, endX + (isRight ? 5 : -5), endY);
+                    ctx.restore();
+                });
+            });
+        }
+    };
+
     new Chart(document.getElementById('donutChart'), {
         type: 'doughnut',
         data: {
-            labels: dataBest.map(item => {
-                const percentage = ((item.total_quantity / totalQuantity) * 100).toFixed(1);
-                return `${item.product_name} (${percentage}%)`;
-            }),
+            labels: dataBest.map(item => item.product_name),
             datasets: [{
                 data: dataBest.map(item => item.total_quantity),
-                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+                backgroundColor: ['#d62828', '#0077b6', '#fca311', '#2a9d8f', '#6a4c93']
             }]
         },
         options: {
-            ...commonOptions,
+            responsive: true,
+            // 가로세로 비율(Aspect Ratio)을 강제로 유지할지 여부
+            maintainAspectRatio: false,
+            //maintainAspectRatio: true,
+            // 여백, 사이즈 조정
+            layout: { 
+                padding: { top: 40, bottom: 40, left: 10, right: 80 }
+            },
+            // 범례 죽이기
+            // plugins: { legend: { display: false } }
             plugins: {
                 legend: { 
-                    position: 'right',
-                    labels: {
-                        font: { size: 12 }
-                    }
+                    position: 'right', 
+                    align: 'center'
                 },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const val = context.raw;
-                            const percentage = ((val / totalQuantity) * 100).toFixed(1);
-                            return `${context.label.split('(')[0]}: ${val}개 (${percentage}%)`;
-                        }
-                    }
-                }
+                tooltip: { enabled: true }
             }
-        }
+        },
+        plugins: [externalLabelsPlugin]
     });
 
     // 3. 매출 순위 상품 TOP 5 (총액 기준) [막대그래프]
@@ -109,11 +164,12 @@ async function initDashboard() {
             datasets: [{
                 label: '총 매출액',
                 data: dataBestSales.map(item => item.total_sales),
-                backgroundColor: '#2d6a4f'
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
             }]
         },
         options: {
             ...commonOptions,
+            plugins: { legend: { display: false } },
             scales: {
                 y: {
                     ticks: {
@@ -123,8 +179,6 @@ async function initDashboard() {
             }
         }
     });
-
-    //4. 연도별 매출[타사비교] 비교 예정 [묶은막대그래프]
 }
 initDashboard();
 </script>
