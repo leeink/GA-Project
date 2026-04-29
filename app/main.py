@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 from core.config import STATIC_DIR
-from router import auth_router, user_router, product_router, sales_record_router_detail
+from router import auth_router, user_router, product_router, sales_record_router_detail, sales_record_dashboard
 from model import user, product, cart, sales_record
 
 app = FastAPI()
@@ -21,3 +21,4 @@ app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(product_router.router)
 app.include_router(sales_record_router_detail.router)
+app.include_router(sales_record_dashboard.router) #dashboard 라우터 추가

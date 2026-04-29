@@ -1,0 +1,131 @@
+{% extends 'admin_base.html' %}
+{% block title %}대시보드{% endblock %}
+
+{% block content %}
+{# 상단: 연도별 매출 추이 (전체 가로) #}
+<div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid #ccc;">
+    <div class="card-title">연도별 매출 추이</div>
+    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
+    <div style="height: 300px;">
+        <canvas id="lineChart"></canvas>
+    </div>
+</div>
+
+{# 하단 왼쪽: 도넛 차트 (판매량 비중) #}
+<div style="display: flex; gap: 20px;">
+    <div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
+        <div class="card-title">많이 팔린 상품 TOP 5 (판매량 기준)</div>
+        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
+        <div style="height: 300px; position: relative;">
+            <canvas id="donutChart"></canvas>
+        </div>
+    </div>
+    
+{# 3. 하단 오른쪽: 막대 차트 (금액 기준) #}
+<div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
+    <div class="card-title">매출 순위 상품 TOP 5 (총액 기준)</div>
+     <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
+    <div style="height: 300px;">
+        <canvas id="barChart"></canvas>
+    </div>
+    </div>
+</div>
+
+<script>
+async function initDashboard() {
+    const commonOptions = { responsive: true, maintainAspectRatio: false };
+
+    // 1. 연도별 총매출 [꺽은선그래프]
+    const resYear = await fetch('/admin/dashboard/yearlySales');
+    const jsonYear = await resYear.json();
+    const dataYear = jsonYear.data;
+
+    new Chart(document.getElementById('lineChart'), {
+        type: 'line',
+        data: {
+            labels: dataYear.map(item => item.year),
+            datasets: [{
+                label: '연 매출',
+                data: dataYear.map(item => item.total_sales),
+                borderColor: '#40916c',
+                backgroundColor: 'rgba(64, 145, 108, 0.1)',
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: commonOptions
+    });
+
+    // 2. 많이 팔린 상품 TOP 5 (판매량 기준) [도넛]
+    const resBest = await fetch('/admin/dashboard/best5_count');
+    const jsonBest = await resBest.json();
+    const dataBest = jsonBest.data;
+
+    const totalQuantity = dataBest.reduce((sum, item) => sum + item.total_quantity, 0);
+
+    new Chart(document.getElementById('donutChart'), {
+        type: 'doughnut',
+        data: {
+            labels: dataBest.map(item => {
+                const percentage = ((item.total_quantity / totalQuantity) * 100).toFixed(1);
+                return `${item.product_name} (${percentage}%)`;
+            }),
+            datasets: [{
+                data: dataBest.map(item => item.total_quantity),
+                backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                legend: { 
+                    position: 'right',
+                    labels: {
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const val = context.raw;
+                            const percentage = ((val / totalQuantity) * 100).toFixed(1);
+                            return `${context.label.split('(')[0]}: ${val}개 (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // 3. 매출 순위 상품 TOP 5 (총액 기준) [막대그래프]
+    const resBestSales = await fetch('/admin/dashboard/best5_sales');
+    const jsonBestSales = await resBestSales.json();
+    const dataBestSales = jsonBestSales.data;
+
+    new Chart(document.getElementById('barChart'), {
+        type: 'bar',
+        data: {
+            labels: dataBestSales.map(item => item.product_name),
+            datasets: [{
+                label: '총 매출액',
+                data: dataBestSales.map(item => item.total_sales),
+                backgroundColor: '#2d6a4f'
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                y: {
+                    ticks: {
+                        callback: v => '₩' + (v / 10000).toFixed(0) + '만'
+                    }
+                }
+            }
+        }
+    });
+
+    //4. 연도별 매출[타사비교] 비교 예정 [묶은막대그래프]
+}
+initDashboard();
+</script>
+{% endblock %}
