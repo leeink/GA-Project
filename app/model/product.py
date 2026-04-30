@@ -23,7 +23,6 @@ class Product(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String, nullable=False)
     cost: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     category: Mapped[CategoryType] = mapped_column(Enum(CategoryType))
     storage_type: Mapped[StorageType] = mapped_column(Enum(StorageType))
 
