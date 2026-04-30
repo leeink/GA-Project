@@ -14,12 +14,6 @@ from core.security import get_current_user_from_cookie
 from schema.auth_schema import TokenResponse, RefreshRequest, LogoutRequest
 from schema.user_schema import UserResponse, UserCreateRequest
 from service.auth_service import login, refresh_token, logout
-from service.product_service import (
-    delete_completed_order,
-    find_completed_orders_by_user,
-    update_completed_order_address,
-    update_completed_order_quantity,
-)
 from service.user_service import create_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -176,7 +170,7 @@ async def login_form(
         password: str = Form(...),
         db: AsyncSession = Depends(get_db)):
     try:
-        tokens = await login(db, SimpleNamespace(username=email, password=password))
+        tokens, user_id = await login(db, SimpleNamespace(username=email, password=password))
     except HTTPException as exc:
         return render_auth_page(
             request,
@@ -187,7 +181,7 @@ async def login_form(
         )
 
     response = RedirectResponse(url="/product/", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie("access_token", tokens.access_token, httponly=True, samesite="lax")
+    response.set_cookie("access_token", tokens.access_token, httponly=False, samesite="lax")
     response.set_cookie("refresh_token", tokens.refresh_token, httponly=True, samesite="lax")
     return response
 

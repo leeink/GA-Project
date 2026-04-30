@@ -13,7 +13,7 @@ from model.refreshtoken import RefreshToken
 from service.user_service import find_user_by_email, find_user_by_id
 
 
-async def login(db: AsyncSession, data: OAuth2PasswordRequestForm) -> TokenResponse:
+async def login(db: AsyncSession, data: OAuth2PasswordRequestForm):
     user = await find_user_by_email(db, data.username)
 
     # Invalid email or password or Incorrect password
@@ -40,7 +40,7 @@ async def login(db: AsyncSession, data: OAuth2PasswordRequestForm) -> TokenRespo
     return TokenResponse(
         access_token=create_access_token(str(user.id)),
         refresh_token=raw_refresh_token,
-    )
+    ), user.id
 
 async def refresh_token(db: AsyncSession, refresh_token_str: str) -> TokenResponse:
     # Select Refresh Token

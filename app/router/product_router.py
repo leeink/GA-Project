@@ -50,4 +50,4 @@ async def product_by_category(request: Request, category: str = "", db: AsyncSes
 async def order(request: Request, dto: OrderSchema, db: AsyncSession = Depends(get_db)):
     current_user = await get_current_user_from_cookie(request, db)
     user_id = current_user.id if current_user else None
-    return await product_order(db, dto, user_id=user_id)
+    return await product_order(db, dto, user_id)

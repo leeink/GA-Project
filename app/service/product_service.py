@@ -1,3 +1,5 @@
+import uuid
+
 from core.exceptions import HTTPException
 from sqlalchemy import select, insert,func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +32,7 @@ async def find_product_by_category(db: AsyncSession, category: str):
     return result.scalars().all()
 
 # 상품 주문
-async def product_order(db: AsyncSession, dto: OrderSchema):
+async def product_order(db: AsyncSession, dto: OrderSchema, user_id: uuid.UUID | str):
     # 1. 모든 product_id 추출
     product_ids = list(dto.item.keys())
 
@@ -96,7 +98,7 @@ async def product_order(db: AsyncSession, dto: OrderSchema):
         # 5. 판매 기록 데이터 준비
         sales_records.append({
             "product_id": p_id,
-            "user_id": dto.user_id,
+            "user_id": user_id,
             "quantity": requested_qty,
             "sales_price": product.cost * requested_qty,
             "address": dto.address,

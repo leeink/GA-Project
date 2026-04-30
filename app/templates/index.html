@@ -659,7 +659,7 @@
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     item: orderItems,
-                    address: customerAddress.value
+                    address: customerAddress.value,
                 })
             });
             const result = await response.json();
