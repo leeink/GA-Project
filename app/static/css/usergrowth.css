@@ -1,0 +1,131 @@
+/* 전체 컨테이너 */
+.usergrowth-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+}
+
+/* 상단 헤더: 제목(좌) / 드롭박스(우) 분리 */
+.growth-header {
+    display: flex;
+    justify-content: space-between;
+    /* align-items: flex-end; 제목 바닥선과 드롭박스 정렬 */
+    margin-bottom: 10px;
+    width: 100%;
+}
+
+.header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* 드롭박스(Select) 디자인 */
+.year-select {
+    width: 120px;
+    padding: 8px 30px 8px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    cursor: pointer;
+    appearance: none; /* 기본 화살표 제거 */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 14px;
+    transition: all 0.2s ease;
+}
+
+.year-select:hover {
+    border-color: #10b981;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 요약 카드 섹션 */
+.summary-card {
+    background: #ffffff;
+    padding: 45px 30px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+/* 요약 카드 내부 타이틀 중앙 정렬 */
+.summary-card-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.summary-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* 데이터 정렬 컨테이너 */
+.summary-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.summary-item {
+    text-align: center;
+    flex: 1;
+}
+
+.item-label {
+    font-size: 15px;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.item-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.highlight-green {
+    color: #10b981 !important;
+}
+
+/* 화살표 및 구분선 */
+.summary-divider-arrow {
+    font-size: 24px;
+    color: #e2e8f0;
+    padding: 0 20px;
+}
+
+.summary-divider-line {
+    border-left: 2px solid #f1f5f9;
+    height: 70px;
+    margin: 0 40px;
+}
+
+/* 차트 그리드 레이아웃 */
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.chart-card {
+    background: #ffffff;
+    padding: 25px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.chart-container {
+    position: relative;
+    height: 420px;
+    width: 100%;
+}
