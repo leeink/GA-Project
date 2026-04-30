@@ -66,3 +66,24 @@ async def get_current_user(
     if user is None or not user.is_active:
         raise credentials_exception
     return user
+
+
+async def get_current_user_from_cookie(request, db: AsyncSession):
+    from service.user_service import find_user_by_id
+
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+    except JWTError:
+        return None
+
+    user = await find_user_by_id(db, user_id)
+    if user is None or not user.is_active:
+        return None
+    return user

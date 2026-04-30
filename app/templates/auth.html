@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% set is_register = mode == "register" %}
+
+{% block title %}{{ "회원가입" if is_register else "로그인" }} | 글로벌프레시{% endblock %}
+
+{% block content %}
+<header class="topbar">
+    <a class="brand" href="/product/" aria-label="글로벌프레시 홈">
+        <span class="brand-mark">F</span>
+        <span>글로벌프레시</span>
+    </a>
+    <nav class="nav" aria-label="주요 메뉴">
+        <a href="/auth/register">회원가입</a>
+        <a href="/auth/login">로그인</a>
+    </nav>
+</header>
+
+<main class="auth-shell">
+    <section class="auth-panel" aria-labelledby="authTitle">
+        <a class="close-page" href="/product/" aria-label="{{ '회원가입' if is_register else '로그인' }} 닫기">×</a>
+        <div class="auth-copy">
+            <span class="eyebrow">GLOBAL FRESH</span>
+            <h1 id="authTitle">{{ "회원가입" if is_register else "로그인" }}</h1>
+            <p>
+                {{ "이메일과 닉네임으로 계정을 만들고 냉동식품 주문을 시작하세요." if is_register else "가입한 이메일로 로그인하고 주문을 이어가세요." }}
+            </p>
+        </div>
+
+        <form class="auth-form" method="post" action="{{ '/auth/register/form' if is_register else '/auth/login/form' }}">
+            {% if error %}
+            <p class="auth-message {{ 'success' if not is_register and '완료' in error else '' }}" aria-live="polite">{{ error }}</p>
+            {% endif %}
+
+            <div class="field">
+                <label for="email">이메일</label>
+                <input id="email" name="email" type="email" value="{{ email or '' }}" autocomplete="email" required>
+            </div>
+
+            {% if is_register %}
+            <div class="field">
+                <label for="nickname">닉네임</label>
+                <input id="nickname" name="nickname" type="text" value="{{ nickname or '' }}" minlength="2" maxlength="8" autocomplete="nickname" required>
+            </div>
+
+            <div class="field">
+                <label for="birthDate">생년월일</label>
+                <input id="birthDate" name="birth_date" type="date" value="{{ birth_date or '' }}" required>
+            </div>
+
+            <div class="field">
+                <label for="gender">성별</label>
+                <select id="gender" name="gender" required>
+                    <option value="" disabled {{ 'selected' if not gender else '' }}>선택</option>
+                    <option value="남" {{ 'selected' if gender == '남' else '' }}>남</option>
+                    <option value="여" {{ 'selected' if gender == '여' else '' }}>여</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="field">
+                <label for="password">비밀번호</label>
+                <input id="password" name="password" type="password" minlength="8" autocomplete="{{ 'new-password' if is_register else 'current-password' }}" required>
+            </div>
+
+            <button class="btn btn-primary checkout" type="submit">{{ "가입하기" if is_register else "로그인" }}</button>
+        </form>
+
+        <p class="auth-switch">
+            {% if is_register %}
+            이미 계정이 있으신가요? <a href="/auth/login">로그인</a>
+            {% else %}
+            아직 계정이 없으신가요? <a href="/auth/register">회원가입</a>
+            {% endif %}
+        </p>
+    </section>
+</main>
+
+<footer>
+    <span>글로벌프레시 냉동식품 전문몰</span>
+    <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
+</footer>
+{% endblock %}

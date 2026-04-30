@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}마이페이지 | 글로벌프레시{% endblock %}
+
+{% block content %}
+<header class="topbar">
+    <a class="brand" href="/product/" aria-label="글로벌프레시 홈">
+        <span class="brand-mark">F</span>
+        <span>글로벌프레시</span>
+    </a>
+    <nav class="nav" aria-label="주요 메뉴">
+        <form class="nav-logout" action="/auth/logout/form" method="post">
+            <button class="nav-link" type="submit">로그아웃</button>
+        </form>
+        <a href="/auth/mypage">마이페이지</a>
+    </nav>
+</header>
+
+<main class="auth-shell">
+    <section class="auth-panel" aria-labelledby="mypageTitle">
+        <a class="close-page" href="/product/" aria-label="마이페이지 닫기">×</a>
+        <div class="auth-copy">
+            <span class="eyebrow">MY PAGE</span>
+            <h1 id="mypageTitle">마이페이지</h1>
+            <p>회원 정보를 확인할 수 있습니다.</p>
+        </div>
+
+        <div class="mypage-info">
+            <div class="summary-row">
+                <span>회원 구분</span>
+                <strong>{{ "관리자" if current_user.is_admin else "일반 회원" }}</strong>
+            </div>
+            <div class="summary-row">
+                <span>이메일</span>
+                <strong>{{ current_user.email }}</strong>
+            </div>
+            <div class="summary-row">
+                <span>닉네임</span>
+                <strong>{{ current_user.nickname }}</strong>
+            </div>
+        </div>
+
+        <div class="mypage-orders">
+            <h2>주문완료 상품</h2>
+            {% if completed_orders %}
+                {% if latest_order_address %}
+                <div class="order-address">
+                    <span>배송주소</span>
+                    <strong>{{ latest_order_address }}</strong>
+                </div>
+                {% endif %}
+                {% for order in completed_orders %}
+                <article class="order-history-item">
+                    <div>
+                        <strong>{{ order.product_name }}</strong>
+                        <span>{{ order.quantity }}개 · {{ "{:,}".format(order.sales_price) }}원</span>
+                    </div>
+                    <time datetime="{{ order.sold_at.date().isoformat() }}">{{ order.sold_at.strftime("%Y-%m-%d") }}</time>
+                </article>
+                {% endfor %}
+            {% else %}
+            <p class="empty">주문완료 상품이 없습니다.</p>
+            {% endif %}
+        </div>
+    </section>
+</main>
+
+<footer>
+    <span>글로벌프레시 냉동식품 전문몰</span>
+    <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
+</footer>
+{% endblock %}

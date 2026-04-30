@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -7,6 +8,8 @@ class UserCreateRequest(BaseModel):
     email: EmailStr
     password: str
     nickname: str
+    gender: str | None = None
+    birth_date: date | None = None
 
     @field_validator("password")
     def password_min_length(cls, v):
@@ -21,6 +24,15 @@ class UserCreateRequest(BaseModel):
         if len(v) < 2 or len(v) > 8:
             raise ValueError("Nickname must be between 2 and 8 characters long")
         return v
+
+    @field_validator("gender")
+    def gender_options(cls, v):
+        gender_map = {"남": "m", "여": "f", "m": "m", "f": "f"}
+        if v is None:
+            return v
+        if v not in gender_map:
+            raise ValueError("Gender must be 남 or 여")
+        return gender_map[v]
 
 class UserResponse(BaseModel):
     id: uuid.UUID

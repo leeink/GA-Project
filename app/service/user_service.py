@@ -40,6 +40,8 @@ async def create_user(db: AsyncSession, data: UserCreateRequest) -> User:
         email = data.email,
         password_hash = hash_password(data.password),
         nickname = data.nickname,
+        gender = data.gender or "m",
+        birth_date = data.birth_date,
     )
 
     db.add(user)

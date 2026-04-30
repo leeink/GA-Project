@@ -3,16 +3,112 @@
 {% block title %}글로벌프레시존 | 냉동식품 전문몰{% endblock %}
 
 {% block content %}
-{# 상단 고정 메뉴: 브랜드명, 상품 목록 이동, 품질관리 이동, 선택 상품 개수를 보여준다. #}
+<style>
+    .address-search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .address-search-row .btn {
+        white-space: nowrap;
+    }
+
+    @media (max-width: 520px) {
+        .address-search-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .order-confirmation {
+        position: fixed;
+        inset: 0;
+        z-index: 1000;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.58);
+    }
+
+    .order-confirmation[hidden] {
+        display: none;
+    }
+
+    .order-confirmation-dialog {
+        width: min(100%, 420px);
+        max-height: min(720px, calc(100vh - 40px));
+        overflow-y: auto;
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    }
+
+    .order-confirmation-head,
+    .order-confirmation-body,
+    .order-confirmation-actions {
+        padding: 20px;
+    }
+
+    .order-confirmation-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .order-confirmation-head h4 {
+        margin: 0;
+        font-size: 20px;
+    }
+
+    .order-confirmation-head p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .order-confirmation-close {
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #0f172a;
+        cursor: pointer;
+        font-size: 22px;
+        line-height: 1;
+    }
+
+    .order-confirmation-body ul {
+        margin: 0 0 18px;
+        padding-left: 20px;
+    }
+
+    .order-confirmation-actions {
+        display: flex;
+        justify-content: flex-end;
+        border-top: 1px solid #e5e7eb;
+    }
+</style>
+
+{# 상단 고정 메뉴: 브랜드명과 주요 메뉴를 보여준다. #}
 <header class="topbar">
     <a class="brand" href="#top" aria-label="글로벌프레시 홈">
         <span class="brand-mark">F</span>
         <span>글로벌프레시</span>
     </a>
     <nav class="nav" aria-label="주요 메뉴">
-        <button class="nav-link" type="button" data-scroll-target="#products">인기상품</button>
-        <a href="#quality">품질관리</a>
-        <span class="selection-pill">선택 <span id="cartCount">0</span>개</span>
+        {% if current_user %}
+        <form class="nav-logout" action="/auth/logout/form" method="post">
+            <button class="nav-link" type="submit">로그아웃</button>
+        </form>
+        <a href="/auth/mypage">마이페이지</a>
+        {% else %}
+        <a href="/auth/register">회원가입</a>
+        <a href="/auth/login">로그인</a>
+        {% endif %}
     </nav>
 </header>
 
@@ -20,7 +116,7 @@
 <section class="hero" id="top">
     <div class="hero-copy">
         <span class="eyebrow">오늘 주문, 내일 차갑게 도착</span>
-        <h1>냉동실을 든든하게 채우는 한 끼</h1>
+        <h1>식사, 간식을 든든하게 채우는 한 끼</h1>
         <p>식사부터 반찬, 안주, 아이들 간식까지. 급속 냉동으로 맛과 식감을 지킨 냉동식품을 합리적인 가격으로 만나보세요.</p>
         <div class="hero-actions">
             <button class="btn btn-primary" type="button" data-scroll-target="#products">상품 보기</button>
@@ -48,8 +144,8 @@
     <section id="products" aria-labelledby="productsTitle">
         <div class="section-head">
             <div>
-                <h2 id="productsTitle">잘 팔리는 냉동식품</h2>
-                <p>식사와 분식 메뉴를 골고루 준비했습니다.</p>
+                <h2 id="productsTitle">Best 냉동식품</h2>
+                <p>식사와 간식 메뉴를 골고루 준비했습니다.</p>
             </div>
             <div class="filters" aria-label="상품 필터">
                 <button class="filter active" type="button" data-filter="all">전체</button>
@@ -100,20 +196,28 @@
                         <input id="customerName" name="name" type="text" autocomplete="name" required>
                     </div>
                     <div class="field">
-                        <label for="customerPhone">연락처</label>
-                        {# name 속성이 없어서 화면 입력만 받고 서버 전송 데이터에는 포함하지 않는다. #}
-                        <input id="customerPhone" type="tel" autocomplete="tel" placeholder="010-0000-0000" required>
+                        <label for="customerPostcode">우편번호</label>
+                        <div class="address-search-row">
+                            <input id="customerPostcode" type="text" inputmode="numeric" placeholder="주소 검색을 눌러주세요" readonly>
+                            <button class="btn btn-ghost" id="addressSearchButton" type="button">주소 검색</button>
+                        </div>
                     </div>
                     <div class="field">
-                        <label for="customerAddress">배송 주소</label>
-                        <input id="customerAddress" name="address" type="text" autocomplete="street-address" required>
+                        <label for="customerBaseAddress">기본 주소</label>
+                        <input id="customerBaseAddress" type="text" autocomplete="street-address" placeholder="검색한 주소가 입력됩니다" readonly required>
                     </div>
+                    <div class="field">
+                        <label for="customerDetailAddress">상세 주소</label>
+                        <input id="customerDetailAddress" type="text" autocomplete="address-line2" placeholder="동/호수 등 상세주소를 입력하세요" required>
+                    </div>
+                    <input id="customerAddress" name="address" type="hidden">
                     <div class="field">
                         <label for="customerMemo">배송 요청사항</label>
                         {# name 속성이 없어서 화면 입력만 받고 서버 전송 데이터에는 포함하지 않는다. #}
                         <textarea id="customerMemo" placeholder="예: 문 앞에 놓아주세요."></textarea>
                     </div>
                     <p class="form-message" id="orderMessage" aria-live="polite"></p>
+                    <div class="order-confirmation" id="orderConfirmation" hidden></div>
                     <button class="btn btn-primary checkout" type="submit">주문하기</button>
                 </form>
             </div>
@@ -165,6 +269,7 @@
     <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
 </footer>
 
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
     // 상품명과 로컬 이미지 파일을 연결한다. DB 상품명이 이 이름과 같으면 해당 이미지가 사용된다.
     const productImageByName = {
@@ -217,15 +322,89 @@
     const productsSection = document.querySelector("#products");
     const productGrid = document.querySelector("#productGrid");
     const productPage = document.querySelector("#productPage");
-    const cartCount = document.querySelector("#cartCount");
     const selectedItemsText = document.querySelector("#selectedItemsText");
     const subtotalEl = document.querySelector("#subtotal");
     const deliveryFeeEl = document.querySelector("#deliveryFee");
     const totalEl = document.querySelector("#total");
     const orderForm = document.querySelector("#orderForm");
     const orderMessage = document.querySelector("#orderMessage");
+    const orderConfirmation = document.querySelector("#orderConfirmation");
+    const addressSearchButton = document.querySelector("#addressSearchButton");
+    const customerPostcode = document.querySelector("#customerPostcode");
+    const customerBaseAddress = document.querySelector("#customerBaseAddress");
+    const customerDetailAddress = document.querySelector("#customerDetailAddress");
+    const customerAddress = document.querySelector("#customerAddress");
 
     const formatWon = value => value.toLocaleString("ko-KR") + "원";
+
+    // 우편번호, 기본 주소, 상세 주소를 주문 API로 보낼 하나의 배송 주소로 합친다.
+    function updateCustomerAddress() {
+        const postcode = customerPostcode.value.trim();
+        const baseAddress = customerBaseAddress.value.trim();
+        const detailAddress = customerDetailAddress.value.trim();
+
+        customerAddress.value = [
+            postcode ? `(${postcode})` : "",
+            baseAddress,
+            detailAddress
+        ].filter(Boolean).join(" ");
+
+        return customerAddress.value;
+    }
+
+    // 다음 우편번호 서비스를 열고 선택한 주소를 배송 정보 입력칸에 반영한다.
+    function openAddressSearch() {
+        if (!window.daum?.Postcode) {
+            orderMessage.classList.remove("success");
+            orderMessage.textContent = "주소 검색 서비스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+            return;
+        }
+
+        new daum.Postcode({
+            oncomplete(data) {
+                customerPostcode.value = data.zonecode || "";
+                customerBaseAddress.value = data.roadAddress || data.jibunAddress || "";
+                customerDetailAddress.value = "";
+                updateCustomerAddress();
+                customerDetailAddress.focus();
+            }
+        }).open();
+    }
+
+    function closeOrderConfirmation() {
+        orderConfirmation.hidden = true;
+        orderConfirmation.innerHTML = "";
+    }
+
+    function openOrderConfirmation(result) {
+        orderConfirmation.innerHTML = `
+            <div class="order-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="orderCompleteTitle" tabindex="-1">
+                <div class="order-confirmation-head">
+                    <div>
+                        <h4 id="orderCompleteTitle">주문완료</h4>
+                        <p>주문이 정상적으로 접수되었습니다.</p>
+                    </div>
+                    <button class="order-confirmation-close" type="button" aria-label="주문완료 팝업 닫기" data-order-popup-close>&times;</button>
+                </div>
+                <div class="order-confirmation-body">
+                    <ul>
+                        ${result.ordered_items.map(item => `
+                            <li>${item.name} ${item.quantity}개</li>
+                        `).join("")}
+                    </ul>
+                    <div class="summary-row">
+                        <span>배송주소</span>
+                        <strong>${result.address}</strong>
+                    </div>
+                </div>
+                <div class="order-confirmation-actions">
+                    <button class="btn btn-primary" type="button" data-order-popup-close>확인</button>
+                </div>
+            </div>
+        `;
+        orderConfirmation.hidden = false;
+        orderConfirmation.querySelector(".order-confirmation-dialog").focus();
+    }
 
     // 장바구니에서 특정 상품의 선택 수량을 가져온다.
     function productQuantity(productId) {
@@ -313,7 +492,6 @@
         const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
         const deliveryFee = subtotal === 0 || subtotal >= 30000 ? 0 : 3000;
 
-        cartCount.textContent = count;
         selectedItemsText.textContent = items.length
             ? items.map(item => `${item.name} ${item.qty}개`).join(", ")
             : "상품 카드에서 수량을 선택해 주세요.";
@@ -419,22 +597,91 @@
         alert("구독 신청이 완료되었습니다.");
     });
 
-    // 주문 폼은 현재 DB 저장 API와 연결되어 있지 않아 안내 문구만 보여준다.
-    orderForm.addEventListener("submit", event => {
+    addressSearchButton.addEventListener("click", openAddressSearch);
+    customerDetailAddress.addEventListener("input", updateCustomerAddress);
+    orderConfirmation.addEventListener("click", event => {
+        if (event.target === orderConfirmation || event.target.closest("[data-order-popup-close]")) {
+            closeOrderConfirmation();
+        }
+    });
+
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !orderConfirmation.hidden) {
+            closeOrderConfirmation();
+        }
+    });
+
+    // 주문 폼은 DB 저장 API 응답을 확인한 뒤 주문 완료 메시지를 보여준다.
+    orderForm.addEventListener("submit", async event => {
         event.preventDefault();
         const orderItems = Object.fromEntries(
             [...cart.entries()].map(([productId, product]) => [productId, product.qty])
         );
 
-        console.log("주문완료!");
-        fetch('/product/order', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                item: orderItems,
-                address: document.querySelector("#customerAddress").value
-            })
-        })
+        if (!Object.keys(orderItems).length) {
+            orderMessage.classList.remove("success");
+            orderMessage.textContent = "주문할 상품을 먼저 선택해 주세요.";
+            orderConfirmation.hidden = true;
+            orderConfirmation.innerHTML = "";
+            return;
+        }
+
+        if (!customerBaseAddress.value.trim()) {
+            orderMessage.classList.remove("success");
+            orderMessage.textContent = "주소 검색으로 배송지를 선택해 주세요.";
+            orderConfirmation.hidden = true;
+            orderConfirmation.innerHTML = "";
+            customerBaseAddress.focus();
+            return;
+        }
+
+        if (!customerDetailAddress.value.trim()) {
+            orderMessage.classList.remove("success");
+            orderMessage.textContent = "상세 주소를 입력해 주세요.";
+            orderConfirmation.hidden = true;
+            orderConfirmation.innerHTML = "";
+            customerDetailAddress.focus();
+            return;
+        }
+
+        updateCustomerAddress();
+
+        const submitButton = orderForm.querySelector(".checkout");
+        submitButton.disabled = true;
+        orderMessage.classList.remove("success");
+        orderMessage.textContent = "주문을 저장하고 있습니다.";
+        orderConfirmation.hidden = true;
+        orderConfirmation.innerHTML = "";
+
+        try {
+            const response = await fetch("/product/order", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    item: orderItems,
+                    address: customerAddress.value
+                })
+            });
+            const result = await response.json();
+
+            if (!response.ok || !result.saved) {
+                throw new Error(result.detail || "주문 저장에 실패했습니다.");
+            }
+
+            cart.clear();
+            orderForm.reset();
+            renderProductDetail();
+            renderCart();
+            orderMessage.classList.add("success");
+            orderMessage.textContent = "주문완료";
+            openOrderConfirmation(result);
+        } catch (error) {
+            orderMessage.classList.remove("success");
+            orderMessage.textContent = error.message || "주문 저장 중 오류가 발생했습니다.";
+            orderConfirmation.hidden = true;
+        } finally {
+            submitButton.disabled = false;
+        }
     });
 
     // 페이지가 처음 열릴 때 상품 목록, 상세 영역, 장바구니 요약을 초기화한다.
