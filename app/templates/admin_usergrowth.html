@@ -1,0 +1,168 @@
+{% extends 'admin_base.html' %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/usergrowth.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="usergrowth-wrapper">
+    <!-- [1] 헤더 섹션 -->
+    <div class="growth-header">
+        <div class="header-left">
+            <div class="page-title-group">
+                <div style="font-size:24px; font-weight:700; color:#1e293b;">고객 성장 통계</div>
+                <div style="font-size:14px; color:#64748b; margin-top:4px;">{{ year }}년 기준 전년 동기 대비 비교</div>
+            </div>
+            <select class="year-select" onchange="location.href='/admin/usergrowth/' + this.value">
+                {% for y in range(2026, 2014, -1) %}
+                <option value="{{ y }}" {{ 'selected' if y|string == year|string else '' }}>{{ y }}년</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="total-summary">
+            <div style="font-size:13px; color:#64748b;">누적 전체 고객 수 (2015-2026)</div>
+            <div id="total-user-count" class="total-value" style="font-size:28px; font-weight:800; color:#10b981;">0명</div>
+        </div>
+    </div>
+
+    <!-- [2] 연간 가입자 현황 요약 카드 -->
+    <div class="summary-card">
+        <div class="summary-card-header">
+            <h3 class="summary-title">연간 가입자 현황</h3>
+        </div>
+
+        <div class="summary-container">
+            <div class="summary-item">
+                <div class="item-label">{{ year|int - 1 }}년 신규 가입자 수</div>
+                <div id="prev-total" class="item-value">0명</div>
+            </div>
+            
+            <div class="summary-divider-arrow">▶</div>
+            
+            <div class="summary-item">
+                <div class="item-label">{{ year }}년 신규 가입자 수</div>
+                <div id="curr-total" class="item-value highlight-green">0명</div>
+            </div>
+            
+            <div class="summary-divider-line"></div>
+            
+            <div class="summary-item">
+                <div class="item-label">당해 성장률</div>
+                <div id="growth-rate" class="item-value">0%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- [3] 하단 차트 그리드 -->
+    <div class="chart-grid">
+        <!-- 분기별 -->
+        <div class="chart-card">
+            <div style="margin-bottom:20px;">
+                <h3 style="font-size:16px; font-weight:700; color:#1e293b;">분기별 가입자 현황</h3>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;">
+                    <span style="color:#10b981; font-weight:700;">▲</span> 하단 %는 전년 동기 대비 증감률입니다.
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="qChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 월별 -->
+        <div class="chart-card">
+            <div style="margin-bottom:20px;">
+                <h3 style="font-size:16px; font-weight:700; color:#1e293b;">월별 가입자 추이</h3>
+                <div style="font-size:13px; color:#64748b; margin-top:4px;">
+                    <span style="color:#3b82f6; font-weight:700;">▲</span> 하단 %는 전년 동기 대비 증감률입니다.
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="mChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+    Chart.register(ChartDataLabels);
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const year = "{{ year }}";
+        const prevYear = parseInt(year) - 1;
+
+        const getCommonOptions = (rawData) => ({
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: { top: 45, bottom: 20 } },
+            plugins: {
+                datalabels: {
+                    anchor: 'end', align: 'top', offset: 8,
+                    formatter: (val) => val > 0 ? val.toLocaleString() : '',
+                    font: { size: 14, weight: '800' }, color: '#334155'
+                },
+                legend: { position: 'top', align: 'end' }
+            },
+            scales: {
+                y: { beginAtZero: true, grace: '30%' },
+                x: {
+                    ticks: {
+                        callback: function(value, index) {
+                            const d = rawData[index];
+                            const label = this.getLabelForValue(value);
+                            if (d && d.prev_count > 0) {
+                                const rate = (((d.curr_count - d.prev_count) / d.prev_count) * 100).toFixed(1);
+                                if (rate == 0) return [label, '= 0%'];
+                                return [label, `${rate > 0 ? '▲' : '▼'} ${Math.abs(rate)}%`];
+                            }
+                            return [label, '-'];
+                        },
+                        font: { size: 14, weight: '700' }, padding: 15
+                    }
+                }
+            }
+        });
+
+        try {
+            const totalRes = await fetch('/admin/usergrowth/api/total-count');
+            const totalData = await totalRes.json();
+            document.getElementById('total-user-count').innerText = `${totalData.total_count.toLocaleString()}명`;
+
+            const summary = await (await fetch(`/admin/usergrowth/api/yearly/${year}`)).json();
+            document.getElementById('prev-total').innerText = `${summary.data.previous_count.toLocaleString()}명`;
+            document.getElementById('curr-total').innerText = `${summary.data.current_count.toLocaleString()}명`;
+            const gRateEl = document.getElementById('growth-rate');
+            gRateEl.innerText = `${summary.data.growth_rate >= 0 ? '+' : ''}${summary.data.growth_rate}%`;
+            gRateEl.style.color = summary.data.growth_rate >= 0 ? '#10b981' : '#ef4444';
+
+            const qRes = await (await fetch(`/admin/usergrowth/api/quarterly/${year}`)).json();
+            new Chart(document.getElementById('qChart'), {
+                type: 'bar',
+                data: {
+                    labels: qRes.data.map(d => `Q${d.quarter}`),
+                    datasets: [
+                        { label: `${prevYear}년`, data: qRes.data.map(d => d.prev_count), backgroundColor: '#e2e8f0', borderRadius: 5 },
+                        { label: `${year}년`, data: qRes.data.map(d => d.curr_count), backgroundColor: '#10b981', borderRadius: 5 }
+                    ]
+                },
+                options: getCommonOptions(qRes.data)
+            });
+
+            const mRes = await (await fetch(`/admin/usergrowth/api/monthly/${year}`)).json();
+            new Chart(document.getElementById('mChart'), {
+                type: 'bar',
+                data: {
+                    labels: mRes.data.map(d => `${d.month}월`),
+                    datasets: [
+                        { label: `${prevYear}년`, data: mRes.data.map(d => d.prev_count), backgroundColor: '#e2e8f0', borderRadius: 5 },
+                        { label: `${year}년`, data: mRes.data.map(d => d.curr_count), backgroundColor: '#3b82f6', borderRadius: 5 }
+                    ]
+                },
+                options: getCommonOptions(mRes.data)
+            });
+        } catch (e) { console.error("Data Load Error:", e); }
+    });
+</script>
+{% endblock %}
