@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
 from core.config import STATIC_DIR
@@ -17,6 +18,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/", response_class=RedirectResponse)
+async def index():
+    return RedirectResponse("/product")
 
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
