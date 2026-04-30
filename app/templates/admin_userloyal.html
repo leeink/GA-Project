@@ -1,0 +1,150 @@
+{% extends 'admin_base.html' %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/userloyal.css') }}">
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+{% endblock %}
+
+{% block content %}
+<div class="analysis-container">
+    <div class="analysis-header">
+        <h2>고객 충성도 분석</h2>
+        <div class="criteria-box">
+            <div class="criteria-item"><span class="badge loyal">충성 고객</span> 최근 30일 내 방문 & 구매 10건 이상</div>
+            <div class="criteria-item"><span class="badge new">신규 고객</span> 누적 구매 총 1건</div>
+            <div class="criteria-item"><span class="badge normal">일반 고객</span> 기타 전체 고객</div>
+        </div>
+    </div>
+
+    <div class="analysis-content-grid">
+        <!-- 좌측: 대형 도넛 차트 영역 -->
+        <div class="analysis-card chart-card">
+            <div class="card-header"><h3>고객 유형별 비중</h3></div>
+            <div class="chart-main-area">
+                <div class="chart-wrapper">
+                    <canvas id="loyalChart"></canvas>
+                    <div class="chart-center-text">
+                        <span class="total-label">총 회원수</span>
+                        <span id="total-count-val" class="total-value">0명</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 우측: 선호 상품 리스트 -->
+        <div class="analysis-card preference-card">
+            <div class="card-header"><h3>유형별 선호 TOP 3</h3></div>
+            <div class="preference-layout">
+                {% for key, title in [('loyal', '충성 고객'), ('new', '신규 고객'), ('normal', '일반 고객')] %}
+                <div class="pref-section" id="pref-section-{{ loop.index0 }}">
+                    <h4>{{ title }} 선호</h4>
+                    <div class="prod-list">
+                        {% for p in preferences[key] %}
+                        <div class="prod-item" onmouseover="showPreview(event, '{{ p.name }}')" onmousemove="movePreview(event)" onmouseout="hidePreview()">
+                            <div class="prod-info">
+                                <span class="rank">{{ loop.index }}</span>
+                                <span class="name">{{ p.name }}</span>
+                            </div>
+                            <span class="count">{{ p.count }}건</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 이미지 프리뷰 툴팁 -->
+<div id="image-preview" class="image-preview-tooltip">
+    <img id="preview-img" src="" alt="상품 이미지">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const rawData = {{ ratios | tojson }};
+    const order = ['충성 고객', '신규 고객', '일반 고객'];
+    const sortedData = order.map(type => {
+        return rawData.find(d => d.type === type) || { type: type, user_count: 0, percentage: 0 };
+    });
+
+    const labels = sortedData.map(item => item.type);
+    const percentages = sortedData.map(item => item.percentage);
+    const counts = sortedData.map(item => item.user_count);
+    const totalUsers = counts.reduce((a, b) => a + b, 0);
+
+    document.getElementById('total-count-val').innerText = totalUsers.toLocaleString() + "명";
+
+    // 차트 생성
+    Chart.register(ChartDataLabels);
+    new Chart(document.getElementById('loyalChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels.map((label, i) => `${label}: ${counts[i].toLocaleString()}명`),
+            datasets: [{
+                data: percentages,
+                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                borderWidth: 6,
+                borderColor: '#ffffff',
+                hoverOffset: 45
+            }]
+        },
+        options: {
+            cutout: '65%',
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: { padding: 40 },
+            onHover: (event, chartElement) => {
+                document.querySelectorAll('.pref-section').forEach(el => el.classList.remove('highlight-box'));
+                if (chartElement.length > 0) {
+                    const index = chartElement[0].index;
+                    const targetBox = document.getElementById(`pref-section-${index}`);
+                    if (targetBox) targetBox.classList.add('highlight-box');
+                }
+            },
+            plugins: {
+                legend: { 
+                    position: 'bottom',
+                    labels: { padding: 30, font: { size: 14, family: 'Pretendard', weight: '600' }, usePointStyle: true }
+                },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: '800', size: 14 },
+                    dropShadow: { enabled: true, blur: 4, color: 'rgba(0,0,0,0.5)' },
+                    formatter: (value) => value > 3 ? value + '%' : ''
+                }
+            }
+        }
+    });
+
+    // --- 이미지 프리뷰 로직 ---
+    const preview = document.getElementById('image-preview');
+    const previewImg = document.getElementById('preview-img');
+
+    const fileMap = {
+        '불고기 덮밥': 'bulgogi-rice.png', '소불고기 덮밥': 'bulgogi-rice.png',
+        '오징어링': 'calamari-rings.png', '치즈볼': 'cheese-balls.png', 
+        '치킨 도리아': 'chicken-doria.png', '핫도그': 'corn-dog.png', 
+        '감자튀김': 'french-fries.png', '삼겹살': 'pork-belly.png',
+        '삼겹살 구이': 'pork-belly.png', '새우볶음밥': 'shrimp-fried-rice.png', 
+        '낙지볶음밥': 'spicy-octopus-lunchbox.png', '낙지볶음 도시락': 'spicy-octopus-lunchbox.png'
+    };
+
+    function showPreview(event, productName) {
+        const fileName = fileMap[productName] || 'default.png';
+        previewImg.src = `/static/images/products/${fileName}`;
+        preview.style.display = 'block';
+    }
+
+    function movePreview(event) {
+        preview.style.left = (event.pageX + 15) + 'px';
+        preview.style.top = (event.pageY + 15) + 'px';
+    }
+
+    function hidePreview() {
+        preview.style.display = 'none';
+    }
+</script>
+{% endblock %}

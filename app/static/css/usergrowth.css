@@ -10,7 +10,7 @@
 .growth-header {
     display: flex;
     justify-content: space-between;
-    /* align-items: flex-end; 제목 바닥선과 드롭박스 정렬 */
+    align-items: flex-end; /*제목 바닥선과 드롭박스 정렬*/
     margin-bottom: 10px;
     width: 100%;
 }
