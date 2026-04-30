@@ -33,7 +33,6 @@ async def find_product_by_category(db: AsyncSession, category: str):
 async def product_order(db: AsyncSession, dto: OrderSchema):
     # 1. 모든 product_id 추출
     product_ids = list(dto.item.keys())
-    user_id = "0011d302-ecd8-4b91-ad7d-a74f635b93a5"  # 예시 유저 ID
 
     # 2. 상품 정보 및 '가용 재고 합계' 한 번에 조회
     # product_stock에서 NORMAL 상태이며 유통기한이 남은 것들만 합산
@@ -97,7 +96,7 @@ async def product_order(db: AsyncSession, dto: OrderSchema):
         # 5. 판매 기록 데이터 준비
         sales_records.append({
             "product_id": p_id,
-            "user_id": user_id,
+            "user_id": dto.user_id,
             "quantity": requested_qty,
             "sales_price": product.cost * requested_qty,
             "address": dto.address,
