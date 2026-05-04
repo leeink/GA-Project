@@ -69,10 +69,7 @@ function downloadRawDataExcel() {
     const sMonth = 1;
     const eMonth = 12;
 
-    if(confirm("모든 테이블의 원본 데이터를 엑셀로 추출하시겠습니까?")) {
-        // 422 에러 방지를 위해 서버 필수 파라미터(s_year, e_year, s_month, e_month)를 쿼리스트링으로 전달
-        window.location.href = `/admin/dashboard/excel_download?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
-    }
+    window.location.href = `/admin/dashboard/excel_download?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
 }
 
 // === [새로 추가된 함수] 보고서 다운로드 요청 ===
