@@ -2,24 +2,32 @@
 {% block title %}대시보드{% endblock %}
 
 {% block content %}
-{# === [새로 추가된 영역] 상단 우측: 범위 보고서 출력 컨트롤 === #}
-<div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 10px;">
+{# === [새로 수정된 영역] 상단 컨트롤 바: 왼쪽(DB 추출) / 오른쪽(보고서 설정) === #}
+<div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
+    
+    {# [26.05.04] xlsx파일 저장 #}
+    <button onclick="downloadRawDataExcel()" 
+            style="padding: 8px 20px; background-color: #f8f9fa; color: #495057; border: 1px solid #ced4da; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s; margin-right: auto;"
+            onmouseover="this.style.backgroundColor='#e2e6ea'" onmouseout="this.style.backgroundColor='#f8f9fa'">
+        📂 DB 전체 추출 (.xlsx)
+    </button>
+
     <span style="font-weight: bold; color: #2c3e50;">📊 통합 사업보고서 출력:</span>
     <select id="startYear" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px;">
-        {% for y in range(2015, 2026) %}
+        {% for y in range(2015, 2027) %}
         <option value="{{ y }}">{{ y }}년</option>
         {% endfor %}
     </select>
     <span style="font-weight: bold; color: #555;">~</span>
     <select id="endYear" style="padding: 8px 12px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px;">
-        {% for y in range(2015, 2026) %}
-        <option value="{{ y }}" {% if y == 2025 %}selected{% endif %}>{{ y }}년</option>
+        {% for y in range(2015, 2027) %}
+        <option value="{{ y }}" {% if y == 2026 %}selected{% endif %}>{{ y }}년</option>
         {% endfor %}
     </select>
     <button onclick="downloadCustomReport()" 
             style="padding: 8px 20px; background-color: #40916c; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.3s;"
             onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
-        📥 다운로드
+        📥 보고서 다운로드
     </button>
 </div>
 {# ========================================================= #}
@@ -54,15 +62,26 @@
 </div>
 
 <script>
+// [26.05.04] xlsx파일 저장
+function downloadRawDataExcel() {
+    const sYear = document.getElementById('startYear').value;
+    const eYear = document.getElementById('endYear').value;
+    const sMonth = 1;
+    const eMonth = 12;
+
+    if(confirm("모든 테이블의 원본 데이터를 엑셀로 추출하시겠습니까?")) {
+        // 422 에러 방지를 위해 서버 필수 파라미터(s_year, e_year, s_month, e_month)를 쿼리스트링으로 전달
+        window.location.href = `/admin/dashboard/excel_download?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
+    }
+}
+
 // === [새로 추가된 함수] 보고서 다운로드 요청 ===
 function downloadCustomReport() {
     const sYear = document.getElementById('startYear').value;
     const eYear = document.getElementById('endYear').value;
-    // 월은 대시보드 특성상 1~12월 고정으로 넘김
     const sMonth = 1;
     const eMonth = 12;
     
-    // 라우터로 파라미터 전달
     window.location.href = `/total/report/custom?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
 }
 // ===========================================
@@ -113,7 +132,6 @@ async function initDashboard() {
                     const { startAngle, endAngle, outerRadius, innerRadius } = element;
                     const midAngle = startAngle + (endAngle - startAngle) / 2;
 
-                    // 1. 도넛 내부 퍼센트 그리기
                     const innerRadiusPos = (outerRadius + innerRadius) / 2;
                     const innerX = centerX + Math.cos(midAngle) * innerRadiusPos;
                     const innerY = centerY + Math.sin(midAngle) * innerRadiusPos;
@@ -126,7 +144,6 @@ async function initDashboard() {
                     ctx.textBaseline = 'middle';
                     ctx.fillText(percentage, innerX, innerY);
 
-                    // 2. 외부 선 (ㄱ자) 그리기
                     const startX = centerX + Math.cos(midAngle) * outerRadius;
                     const startY = centerY + Math.sin(midAngle) * outerRadius;
                     const elbowX = centerX + Math.cos(midAngle) * (outerRadius + 15);
@@ -143,7 +160,6 @@ async function initDashboard() {
                     ctx.lineWidth = 1.5;
                     ctx.stroke();
 
-                    // 3. 외부 텍스트 (상품명 + 수량) 그리기
                     const labelText = `${chart.data.labels[index]} (${dataset.data[index].toLocaleString()}개)`;
                     ctx.fillStyle = '#333';
                     ctx.font = 'bold 12px sans-serif';

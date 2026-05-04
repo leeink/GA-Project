@@ -5,6 +5,11 @@ from core.config import templates
 from service.sales_record_service_dashboard import selectYear_totalSales, best5_count, best5_sales
 from starlette.responses import HTMLResponse
 
+# === [26.05.04] xlsx파일 저장 ===
+from fastapi.responses import StreamingResponse
+from service.excel_download_service import get_raw_db_excel
+from datetime import datetime
+
 #대쉬보드 접속루트
 router = APIRouter(prefix="/admin/dashboard", tags=["admin dashboard"])
 
@@ -32,3 +37,20 @@ async def get_best5_sales(db: AsyncSession = Depends(get_db)):
     return {"data": sql}
 
 #연도별 매출[타사비교] 비교 예정
+
+# === [26.05.04] xlsx파일 저장 ===
+@router.get("/excel_download")
+async def download_custom_report(
+    s_year: int, e_year: int, s_month: int, e_month: int,
+    db: AsyncSession = Depends(get_db)
+):
+    # 서비스 호출하여 모든 테이블 데이터가 담긴 엑셀 생성
+    excel_file = await get_raw_db_excel(db)
+    
+    filename = f"Business_Raw_Data_{datetime.now().strftime('%Y%m%d')}.xlsx"
+    
+    return StreamingResponse(
+        excel_file,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
