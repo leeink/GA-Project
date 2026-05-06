@@ -1,8 +1,12 @@
+import webbrowser
+
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from starlette.staticfiles import StaticFiles
 
+from threading import Timer
 from core.config import STATIC_DIR
 from router import auth_router, user_router, product_router, sales_record_router_detail, sales_record_router_dashboard, user_growth_router, total_router
 from router import user_loyal_router
@@ -23,6 +27,9 @@ app.add_middleware(
 async def index():
     return RedirectResponse("/product")
 
+def open_browser():
+    webbrowser.open("http://127.0.0.1:8000")
+
 app.include_router(auth_router.router)
 app.include_router(user_router.router)
 app.include_router(product_router.router)
@@ -31,3 +38,14 @@ app.include_router(sales_record_router_dashboard.router) #dashboard 라우터 �
 app.include_router(user_growth_router.router) #usergrowth 라우터 추가
 app.include_router(total_router.router)
 app.include_router(user_loyal_router.router) #userloyal 라우터 추가
+
+
+if __name__ == "__main__":
+    Timer(1.5, open_browser).start()
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=8000,
+        reload=False,
+        log_config=None
+    )
