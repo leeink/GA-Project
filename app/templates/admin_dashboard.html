@@ -2,7 +2,7 @@
 {% block title %}대시보드{% endblock %}
 
 {% block content %}
-{# === [새로 수정된 영역] 상단 컨트롤 바: 왼쪽(DB 추출) / 오른쪽(보고서 설정) === #}
+{# === 상단 컨트롤 바 === #}
 <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 20px; gap: 10px; flex-wrap: wrap;">
     
     {# [26.05.04] xlsx파일 저장 #}
@@ -30,63 +30,81 @@
         📥 보고서 다운로드
     </button>
 </div>
-{# ========================================================= #}
 
-{# 상단: 연도별 매출 추이 (전체 가로) #}
+{# 상단: 연도별 매출 추이 #}
 <div class="card" style="margin-bottom: 20px; padding: 20px; border: 1px solid #ccc;">
     <div class="card-title">연도별 매출 추이</div>
-    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
-    <div style="height: 300px;">
+    <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외 (단위: 만 원)</div>
+    <div style="height: 300px; position: relative;">
         <canvas id="lineChart"></canvas>
     </div>
 </div>
 
 {# 중단: 왼쪽(도넛) + 오른쪽(막대) #}
-<div style="display: flex; gap: 20px;">
+<div style="display: flex; gap: 20px; align-items: stretch;">
     <div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
         <div class="card-title">매출 순위 상품 TOP 5 (판매량 기준)</div>
          <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
-        <div style="height: 250px;">
+        <div style="height: 300px; position: relative;">
             <canvas id="donutChart"></canvas>
         </div>
     </div>
     
-    {# 3. 중단 오른쪽: 막대 차트 (금액 기준) #}
     <div class="card" style="flex: 1; padding: 20px; border: 1px solid #ccc;">
         <div class="card-title">매출 순위 상품 TOP 5 (총액 기준)</div>
-        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외</div>
-        <div style="height: 250px;">
+        <div style="font-size: 12px; color: #888; margin-bottom: 10px;">* 2026년도 데이터 제외 (단위: 만 원)</div>
+        <div style="height: 300px; position: relative;">
             <canvas id="barChart"></canvas>
         </div>
     </div>
 </div>
 
 <script>
-// [26.05.04] xlsx파일 저장
 function downloadRawDataExcel() {
     const sYear = document.getElementById('startYear').value;
     const eYear = document.getElementById('endYear').value;
-    const sMonth = 1;
-    const eMonth = 12;
-
-    window.location.href = `/admin/dashboard/excel_download?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
+    window.location.href = `/admin/dashboard/excel_download?s_year=${sYear}&e_year=${eYear}&s_month=1&e_month=12`;
 }
 
-// === [새로 추가된 함수] 보고서 다운로드 요청 ===
 function downloadCustomReport() {
     const sYear = document.getElementById('startYear').value;
     const eYear = document.getElementById('endYear').value;
-    const sMonth = 1;
-    const eMonth = 12;
-    
-    window.location.href = `/total/report/custom?s_year=${sYear}&e_year=${eYear}&s_month=${sMonth}&e_month=${eMonth}`;
+    window.location.href = `/total/report/custom?s_year=${sYear}&e_year=${eYear}&s_month=1&e_month=12`;
 }
-// ===========================================
 
 async function initDashboard() {
-    const commonOptions = { responsive: true, maintainAspectRatio: false };
+    // 10,000만(1억) 단위로만 눈금이 나타나도록 설정하는 함수
+    const getCommonOptions = (showLegend = false) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+            padding: { top: 20, right: 30, bottom: 0, left: 10 }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    // stepSize를 1억(100,000,000)으로 고정하여 중간 단계(5000만 등) 제거
+                    stepSize: 100000000, 
+                    callback: function(value) {
+                        return (value / 10000).toLocaleString() + '만';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: { display: showLegend },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return (context.dataset.label || '금액') + ': ₩' + context.parsed.y.toLocaleString();
+                    }
+                }
+            }
+        }
+    });
 
-    // 1. 연도별 총매출 [꺽은선그래프]
+    // 1. 연도별 총매출
     const resYear = await fetch('/admin/dashboard/yearlySales');
     const jsonYear = await resYear.json();
     const dataYear = jsonYear.data;
@@ -104,14 +122,13 @@ async function initDashboard() {
                 tension: 0.3
             }]
         },
-        options: commonOptions
+        options: getCommonOptions(true)
     });
 
-    // 2. 많이 팔린 상품 TOP 5 (판매량 기준) [도넛]
+    // 2. 도넛 차트 (기존 로직 유지)
     const resBest = await fetch('/admin/dashboard/best5_count');
     const jsonBest = await resBest.json();
     const dataBest = jsonBest.data;
-
     const totalQuantity = dataBest.reduce((sum, item) => sum + item.total_quantity, 0);
 
     const externalLabelsPlugin = {
@@ -120,27 +137,19 @@ async function initDashboard() {
             const { ctx, chartArea: { left, right, top, bottom } } = chart;
             const centerX = (left + right) / 2;
             const centerY = (top + bottom) / 2;
-
             chart.data.datasets.forEach((dataset, i) => {
                 const meta = chart.getDatasetMeta(i);
                 meta.data.forEach((element, index) => {
                     if (meta.hidden || chart.getDataVisibility(index) === false || dataset.data[index] === 0) return;
-
                     const { startAngle, endAngle, outerRadius, innerRadius } = element;
                     const midAngle = startAngle + (endAngle - startAngle) / 2;
-
                     const innerRadiusPos = (outerRadius + innerRadius) / 2;
                     const innerX = centerX + Math.cos(midAngle) * innerRadiusPos;
                     const innerY = centerY + Math.sin(midAngle) * innerRadiusPos;
                     const percentage = ((dataset.data[index] / totalQuantity) * 100).toFixed(0) + '%';
-
                     ctx.save();
-                    ctx.fillStyle = '#fff';
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
                     ctx.fillText(percentage, innerX, innerY);
-
                     const startX = centerX + Math.cos(midAngle) * outerRadius;
                     const startY = centerY + Math.sin(midAngle) * outerRadius;
                     const elbowX = centerX + Math.cos(midAngle) * (outerRadius + 15);
@@ -148,21 +157,10 @@ async function initDashboard() {
                     const isRight = Math.cos(midAngle) > 0;
                     const endX = elbowX + (isRight ? 15 : -15);
                     const endY = elbowY;
-
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(elbowX, elbowY);
-                    ctx.lineTo(endX, endY);
-                    ctx.strokeStyle = dataset.backgroundColor[index];
-                    ctx.lineWidth = 1.5;
-                    ctx.stroke();
-
-                    const labelText = `${chart.data.labels[index]} (${dataset.data[index].toLocaleString()}개)`;
-                    ctx.fillStyle = '#333';
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.textAlign = isRight ? 'left' : 'right';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(labelText, endX + (isRight ? 5 : -5), endY);
+                    ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(elbowX, elbowY); ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = dataset.backgroundColor[index]; ctx.lineWidth = 1.5; ctx.stroke();
+                    ctx.fillStyle = '#333'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = isRight ? 'left' : 'right';
+                    ctx.fillText(`${chart.data.labels[index]} (${dataset.data[index].toLocaleString()}개)`, endX + (isRight ? 5 : -5), endY);
                     ctx.restore();
                 });
             });
@@ -179,23 +177,14 @@ async function initDashboard() {
             }]
         },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            layout: { 
-                padding: { top: 40, bottom: 40, left: 10, right: 80 }
-            },
-            plugins: {
-                legend: { 
-                    position: 'right', 
-                    align: 'center'
-                },
-                tooltip: { enabled: true }
-            }
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 30, bottom: 30, left: 10, right: 80 } },
+            plugins: { legend: { position: 'right', align: 'center' } }
         },
         plugins: [externalLabelsPlugin]
     });
 
-    // 3. 매출 순위 상품 TOP 5 (총액 기준) [막대그래프]
+    // 3. 막대 그래프
     const resBestSales = await fetch('/admin/dashboard/best5_sales');
     const jsonBestSales = await resBestSales.json();
     const dataBestSales = jsonBestSales.data;
@@ -210,17 +199,7 @@ async function initDashboard() {
                 backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF']
             }]
         },
-        options: {
-            ...commonOptions,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: {
-                    ticks: {
-                        callback: v => '₩' + (v / 10000).toFixed(0) + '만'
-                    }
-                }
-            }
-        }
+        options: getCommonOptions(false)
     });
 }
 initDashboard();
