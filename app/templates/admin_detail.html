@@ -95,7 +95,7 @@
 </div>
 
 {# ── 상품별 막대 ── #}
-<div class="card">
+<div class="card" style="margin-bottom: 16px;">
     <div class="card-header">
         <div>
             <div class="card-title">상품별 매출</div>
@@ -105,15 +105,44 @@
     <canvas id="barChart" style="max-height:280px;"></canvas>
 </div>
 
-{% endblock %}
+{# ── [추가 섹션] AI 매출 예측 분석 (드롭박스 연동형) ── #}
+<div class="grid-2" style="margin-top: 24px; margin-bottom: 24px;">
+    {# 왼쪽: 선택 연도 실적 기반 2026년 단기 예측 #}
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">{{ year }}년 실적 기반 2026년 단기 예측</div>
+                <div class="card-subtitle">현재 1~4월 실적과 {{ year }}년 대비 성장률 반영</div>
+            </div>
+        </div>
+        <canvas id="shortTermChart" style="max-height:220px;"></canvas>
+    </div>
 
+    {# 오른쪽: 10년 장기 예측 (고정) #}
+    <div class="card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">10년 장기 추세 예측 (2015~2025 고정)</div>
+                <div class="card-subtitle">과거 10년 CAGR 적용 후 2026년 추산</div>
+            </div>
+        </div>
+        <canvas id="longTermChart" style="max-height:220px;"></canvas>
+    </div>
+</div>
+
+{% endblock %}
 
 {% block scripts %}
 <script>
+// ── 기존 데이터 변수 ──
 const QUARTERLY = {{ quarterly_data | tojson }};
 const MONTHLY   = {{ monthly_data   | tojson }};
 const P_LABELS  = {{ product_labels | tojson }};
-const P_DATA    = {{ product_data   | tojson }};
+const P_DATA    = {{ product_data    | tojson }};
+
+// ── [추가] 예측 데이터 변수 (선택된 year 기반 데이터) ──
+const SHORT_TERM_DATA = {{ short_term_data | tojson }};
+const LONG_TERM_DATA  = {{ long_term_data | tojson }};
 
 const GREEN  = ['#2d6a4f','#40916c','#52b788','#95d5b2'];
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
@@ -124,7 +153,7 @@ function fmtWon(v) {
     return '₩' + v.toLocaleString();
 }
 
-// ── 도넛 차트 ──
+// ── 기존 도넛 차트 ──
 const donutCtx = document.getElementById('donutChart').getContext('2d');
 new Chart(donutCtx, {
     type: 'doughnut',
@@ -162,7 +191,7 @@ const legend = document.getElementById('donut-legend');
         </div>`;
 });
 
-// ── 꺾은선 차트 ──
+// ── 기존 월별 꺾은선 차트 ──
 const lineCtx = document.getElementById('lineChart').getContext('2d');
 const lineGrad = lineCtx.createLinearGradient(0, 0, 0, 220);
 lineGrad.addColorStop(0, 'rgba(64,145,108,0.25)');
@@ -200,7 +229,7 @@ new Chart(lineCtx, {
     }
 });
 
-// ── 막대 차트 ──
+// ── 기존 상품별 막대 차트 ──
 const barCtx = document.getElementById('barChart').getContext('2d');
 const isHorizontal = P_DATA.length > 8;
 
@@ -237,7 +266,7 @@ new Chart(barCtx, {
                     font: { size: 11 },
                     callback: isHorizontal
                         ? v => fmtWon(v)
-                        : (_, index) => P_LABELS[index]  // ← index로 상품명 참조
+                        : (_, index) => P_LABELS[index]
                 }
             },
             y: {
@@ -245,8 +274,85 @@ new Chart(barCtx, {
                 ticks: {
                     font: { size: 11 },
                     callback: isHorizontal
-                        ? (_, index) => P_LABELS[index]  // ← index로 상품명 참조
+                        ? (_, index) => P_LABELS[index]
                         : v => fmtWon(v)
+                }
+            }
+        }
+    }
+});
+
+// ── [추가] 단기 예측 차트 (Bar) ──
+const shortCtx = document.getElementById('shortTermChart').getContext('2d');
+new Chart(shortCtx, {
+    type: 'bar',
+    data: {
+        labels: MONTHS,
+        datasets: [{
+            label: '2026 예측 매출',
+            data: SHORT_TERM_DATA,
+            backgroundColor: 'rgba(52, 152, 219, 0.4)',
+            borderColor: '#3498db',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 } }
+            },
+            y: {
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: v => fmtWon(v)
+                }
+            }
+        }
+    }
+});
+
+// ── [추가] 장기 예측 차트 (Line) ──
+const longCtx = document.getElementById('longTermChart').getContext('2d');
+new Chart(longCtx, {
+    type: 'line',
+    data: {
+        labels: MONTHS,
+        datasets: [{
+            label: '2026 장기 추세',
+            data: LONG_TERM_DATA,
+            borderColor: '#e67e22',
+            backgroundColor: 'rgba(230, 126, 34, 0.05)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 3,
+        }]
+    },
+    options: {
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
+            }
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                ticks: { font: { size: 11 } }
+            },
+            y: {
+                grid: { color: 'rgba(0,0,0,0.04)' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: v => fmtWon(v)
                 }
             }
         }
