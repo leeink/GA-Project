@@ -36,16 +36,21 @@ async def calculate_customer_ratios(session: AsyncSession, user_stats_cte):
     ratios_raw = result.all()
     
     total_users = sum(r.user_count for r in ratios_raw)
+    
+    # 순서 보장을 위해 리스트 가공 (충성 -> 신규 -> 일반 순)
+    target_types = ['충성 고객', '신규 고객', '일반 고객']
+    results_dict = {r.customer_type: r.user_count for r in ratios_raw}
+    
     return [
         {
-            "type": r.customer_type,
-            "user_count": r.user_count, # 명수 추가
-            "percentage": round((r.user_count / total_users) * 100, 1) if total_users > 0 else 0
-        } for r in ratios_raw
+            "type": t,
+            "user_count": results_dict.get(t, 0),
+            "percentage": round((results_dict.get(t, 0) / total_users) * 100, 1) if total_users > 0 else 0
+        } for t in target_types
     ]
 
 async def get_top_products_by_type(session: AsyncSession, user_stats_cte, customer_type: str):
-    """비동기 방식으로 유형별 선호 상품 TOP 3 추출"""
+    """유형별 선호 상품 TOP 5 추출 (기존 3에서 5로 변경)"""
     stmt = (
         select(Product.name, func.count(SalesRecord.id).label("sell_count"))
         .join(SalesRecord, SalesRecord.product_id == Product.id)
@@ -53,7 +58,7 @@ async def get_top_products_by_type(session: AsyncSession, user_stats_cte, custom
         .where(user_stats_cte.c.customer_type == customer_type)
         .group_by(Product.name)
         .order_by(desc("sell_count"))
-        .limit(3)
+        .limit(5) # TOP 5 반영
     )
     result = await session.execute(stmt)
     results = result.all()

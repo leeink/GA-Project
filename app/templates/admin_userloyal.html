@@ -1,150 +1,184 @@
 {% extends 'admin_base.html' %}
 
 {% block head %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/userloyal.css') }}">
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<style>
+    /* 기본 레이아웃 */
+    .analysis-container { padding: 24px; font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .analysis-header { margin-bottom: 24px; border-bottom: 2px solid #e2e8f0; padding-bottom: 24px; }
+    
+    /* 상단 조건 설명 배지 영역 */
+    .criteria-wrapper { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .criteria-badge-card { 
+        display: flex; align-items: center; gap: 10px; background: #fff; 
+        padding: 8px 14px; border-radius: 10px; border: 1px solid #e2e8f0; font-size: 13px; 
+    }
+    .badge { padding: 3px 8px; border-radius: 6px; font-weight: 700; color: #fff; font-size: 11px; }
+    .badge.loyal { background: #10b981; }
+    .badge.new { background: #3b82f6; }
+    .badge.normal { background: #f59e0b; }
+    .criteria-text { color: #64748b; }
+
+    /* 시스템 안내 문구 */
+    .update-info { font-size: 12px; color: #94a3b8; margin-top: 12px; display: flex; align-items: center; gap: 5px; }
+
+    /* 그리드 및 카드 */
+    .analysis-content-grid { display: grid; grid-template-columns: 1.7fr 1fr; gap: 24px; }
+    .analysis-card { background: #fff; border-radius: 16px; padding: 24px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+    /* 드롭박스 영역 및 서브 텍스트 */
+    .card-header-flex { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    #typeFilter { padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; cursor: pointer; outline: none; }
+    .category-scope-text { font-size: 12px; color: #94a3b8; margin-top: 4px; font-weight: 400; }
+
+    /* 리스트 아이템 및 확대 효과 */
+    .prod-horizontal-item { 
+        display: flex; align-items: center; padding: 12px 16px; border-radius: 14px; 
+        background: #fff; border: 1px solid #f1f5f9; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; margin-bottom: 10px;
+    }
+    .prod-horizontal-item:hover { 
+        transform: translateY(-5px); box-shadow: 0 12px 20px -5px rgba(0,0,0,0.1); 
+        border-color: #3b82f6; background-color: #f0f9ff;
+    }
+
+    .prod-img-box { width: 56px; height: 56px; min-width: 56px; margin: 0 16px; border-radius: 10px; overflow: hidden; border: 1px solid #eee; }
+    .prod-thumb-sm { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+    .prod-horizontal-item:hover .prod-thumb-sm { transform: scale(1.25); }
+
+    /* 차트 */
+    .chart-main-area { position: relative; height: 280px; display: flex; justify-content: center; align-items: center; margin: 20px 0; }
+    .total-value { display: block; font-size: 30px; font-weight: 800; }
+
+    @media (max-width: 1100px) { .analysis-content-grid { grid-template-columns: 1fr; } }
+</style>
 {% endblock %}
 
 {% block content %}
 <div class="analysis-container">
     <div class="analysis-header">
-        <h2>고객 충성도 분석</h2>
-        <div class="criteria-box">
-            <div class="criteria-item"><span class="badge loyal">충성 고객</span> 최근 30일 내 방문 & 구매 10건 이상</div>
-            <div class="criteria-item"><span class="badge new">신규 고객</span> 누적 구매 총 1건</div>
-            <div class="criteria-item"><span class="badge normal">일반 고객</span> 기타 전체 고객</div>
+        <h2 style="margin:0;">고객 충성도 분석</h2>
+        
+        <div class="criteria-wrapper">
+            <div class="criteria-badge-card">
+                <span class="badge loyal">충성 고객</span>
+                <span class="criteria-text"><b>충성고객</b> : 최근 30일 이내 방문 및 누적 주문 10건 이상</span>
+            </div>
+            <div class="criteria-badge-card">
+                <span class="badge new">신규 고객</span>
+                <span class="criteria-text"><b>신규고객</b> : 생애 첫 주문을 완료한 시작 단계 고객</span>
+            </div>
+            <div class="criteria-badge-card">
+                <span class="badge normal">일반 고객</span>
+                <span class="criteria-text"><b>일반고객</b> : 충성 및 신규 조건에 해당하지 않는 활동 고객</span>
+            </div>
+        </div>
+
+        <div class="update-info">
+            <i class="fas fa-sync-alt"></i> [안내] 고객 분류는 최근 30일간의 구매 빈도와 누적 주문수를 기준으로 자동 갱신됩니다.
         </div>
     </div>
 
     <div class="analysis-content-grid">
-        <!-- 좌측: 대형 도넛 차트 영역 -->
-        <div class="analysis-card chart-card">
-            <div class="card-header"><h3>고객 유형별 비중</h3></div>
-            <div class="chart-main-area">
-                <div class="chart-wrapper">
-                    <canvas id="loyalChart"></canvas>
-                    <div class="chart-center-text">
-                        <span class="total-label">총 회원수</span>
-                        <span id="total-count-val" class="total-value">0명</span>
-                    </div>
+        <div class="analysis-card">
+            <div class="card-header-flex">
+                <div>
+                    <h3 style="margin:0; font-size: 18px;">유형별 인기 메뉴 TOP 5</h3>
+                    <p class="category-scope-text">* 식사(Meal) 및 스낵(Snack) 전체 카테고리 합산 기준</p>
+                </div>
+                <div class="filter-group">
+                    <span style="font-size: 14px; color: #64748b; font-weight: 600;">분석 대상 선택:</span>
+                    <select id="typeFilter" onchange="filterType()">
+                        <option value="0">충성 고객</option>
+                        <option value="1">신규 고객</option>
+                        <option value="2">일반 고객</option>
+                    </select>
                 </div>
             </div>
-        </div>
-
-        <!-- 우측: 선호 상품 리스트 -->
-        <div class="analysis-card preference-card">
-            <div class="card-header"><h3>유형별 선호 TOP 3</h3></div>
-            <div class="preference-layout">
-                {% for key, title in [('loyal', '충성 고객'), ('new', '신규 고객'), ('normal', '일반 고객')] %}
-                <div class="pref-section" id="pref-section-{{ loop.index0 }}">
-                    <h4>{{ title }} 선호</h4>
-                    <div class="prod-list">
-                        {% for p in preferences[key] %}
-                        <div class="prod-item" onmouseover="showPreview(event, '{{ p.name }}')" onmousemove="movePreview(event)" onmouseout="hidePreview()">
-                            <div class="prod-info">
-                                <span class="rank">{{ loop.index }}</span>
-                                <span class="name">{{ p.name }}</span>
-                            </div>
-                            <span class="count">{{ p.count }}건</span>
-                        </div>
-                        {% endfor %}
+            
+            {% for key, title in [('loyal', '충성'), ('new', '신규'), ('normal', '일반')] %}
+            <div class="pref-section" id="section-{{ loop.index0 }}" style="display: {{ 'block' if loop.index0 == 0 else 'none' }};">
+                {% for p in preferences[key] %}
+                <div class="prod-horizontal-item">
+                    <span style="font-weight: 800; color: #cbd5e1; width: 25px; text-align: center; font-size: 18px;">{{ loop.index }}</span>
+                    <div class="prod-img-box">
+                        {% set img = 'default.png' %}
+                        {% if '불고기' in p.name %}{% set img = 'bulgogi-rice.png' %}
+                        {% elif '오징어' in p.name %}{% set img = 'calamari-rings.png' %}
+                        {% elif '치즈볼' in p.name %}{% set img = 'cheese-balls.png' %}
+                        {% elif '치킨 도리아' in p.name %}{% set img = 'chicken-doria.png' %}
+                        {% elif '핫도그' in p.name %}{% set img = 'corn-dog.png' %}
+                        {% elif '감자튀김' in p.name %}{% set img = 'french-fries.png' %}
+                        {% elif '모짜렐라' in p.name %}{% set img = 'mozzarella-sticks.png' %}
+                        {% elif '삼겹살' in p.name %}{% set img = 'pork-belly.png' %}
+                        {% elif '새우볶음밥' in p.name %}{% set img = 'shrimp-fried-rice.png' %}
+                        {% elif '낙지' in p.name %}{% set img = 'spicy-octopus-lunchbox.png' %}
+                        {% endif %}
+                        <img src="/static/images/products/{{ img }}" class="prod-thumb-sm">
+                    </div>
+                    <div style="flex-grow: 1; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">{{ p.name }}</span>
+                        <span style="font-size: 13px; color: #64748b;">누적 <strong>{{ p.count }}</strong>건</span>
                     </div>
                 </div>
                 {% endfor %}
             </div>
+            {% endfor %}
+        </div>
+
+        <div class="analysis-card">
+            <h3 style="margin:0; font-size: 18px;">회원 구성비</h3>
+            <div class="chart-main-area">
+                <canvas id="loyalChart"></canvas>
+                <div style="position: absolute; text-align: center; pointer-events: none;">
+                    <span id="total-val" class="total-value">0</span>
+                    <span style="font-size: 12px; color: #94a3b8;">전체 회원(명)</span>
+                </div>
+            </div>
+            <div id="legend-box" style="display: flex; flex-direction: column; gap: 8px;"></div>
         </div>
     </div>
-</div>
-
-<!-- 이미지 프리뷰 툴팁 -->
-<div id="image-preview" class="image-preview-tooltip">
-    <img id="preview-img" src="" alt="상품 이미지">
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-    const rawData = {{ ratios | tojson }};
-    const order = ['충성 고객', '신규 고객', '일반 고객'];
-    const sortedData = order.map(type => {
-        return rawData.find(d => d.type === type) || { type: type, user_count: 0, percentage: 0 };
-    });
+    function filterType() {
+        const val = document.getElementById('typeFilter').value;
+        document.querySelectorAll('.pref-section').forEach((s, i) => {
+            s.style.display = (i == val) ? 'block' : 'none';
+        });
+    }
 
-    const labels = sortedData.map(item => item.type);
-    const percentages = sortedData.map(item => item.percentage);
-    const counts = sortedData.map(item => item.user_count);
-    const totalUsers = counts.reduce((a, b) => a + b, 0);
+    const data = {{ ratios | tojson | safe }};
+    const colors = ['#10b981', '#3b82f6', '#f59e0b'];
 
-    document.getElementById('total-count-val').innerText = totalUsers.toLocaleString() + "명";
+    document.getElementById('total-val').innerText = data.reduce((a, b) => a + b.user_count, 0).toLocaleString();
 
-    // 차트 생성
-    Chart.register(ChartDataLabels);
     new Chart(document.getElementById('loyalChart'), {
         type: 'doughnut',
         data: {
-            labels: labels.map((label, i) => `${label}: ${counts[i].toLocaleString()}명`),
+            labels: data.map(d => d.type),
             datasets: [{
-                data: percentages,
-                backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
-                borderWidth: 6,
-                borderColor: '#ffffff',
-                hoverOffset: 45
+                data: data.map(d => d.percentage),
+                backgroundColor: colors,
+                borderWidth: 2
             }]
         },
         options: {
-            cutout: '65%',
+            cutout: '75%',
             responsive: true,
             maintainAspectRatio: false,
-            layout: { padding: 40 },
-            onHover: (event, chartElement) => {
-                document.querySelectorAll('.pref-section').forEach(el => el.classList.remove('highlight-box'));
-                if (chartElement.length > 0) {
-                    const index = chartElement[0].index;
-                    const targetBox = document.getElementById(`pref-section-${index}`);
-                    if (targetBox) targetBox.classList.add('highlight-box');
-                }
-            },
-            plugins: {
-                legend: { 
-                    position: 'bottom',
-                    labels: { padding: 30, font: { size: 14, family: 'Pretendard', weight: '600' }, usePointStyle: true }
-                },
-                datalabels: {
-                    color: '#fff',
-                    font: { weight: '800', size: 14 },
-                    dropShadow: { enabled: true, blur: 4, color: 'rgba(0,0,0,0.5)' },
-                    formatter: (value) => value > 3 ? value + '%' : ''
-                }
-            }
+            plugins: { legend: { display: false } }
         }
     });
 
-    // --- 이미지 프리뷰 로직 ---
-    const preview = document.getElementById('image-preview');
-    const previewImg = document.getElementById('preview-img');
-
-    const fileMap = {
-        '불고기 덮밥': 'bulgogi-rice.png', '소불고기 덮밥': 'bulgogi-rice.png',
-        '오징어링': 'calamari-rings.png', '치즈볼': 'cheese-balls.png', 
-        '치킨 도리아': 'chicken-doria.png', '핫도그': 'corn-dog.png', 
-        '감자튀김': 'french-fries.png', '삼겹살': 'pork-belly.png',
-        '삼겹살 구이': 'pork-belly.png', '새우볶음밥': 'shrimp-fried-rice.png', 
-        '낙지볶음밥': 'spicy-octopus-lunchbox.png', '낙지볶음 도시락': 'spicy-octopus-lunchbox.png'
-    };
-
-    function showPreview(event, productName) {
-        const fileName = fileMap[productName] || 'default.png';
-        previewImg.src = `/static/images/products/${fileName}`;
-        preview.style.display = 'block';
-    }
-
-    function movePreview(event) {
-        preview.style.left = (event.pageX + 15) + 'px';
-        preview.style.top = (event.pageY + 15) + 'px';
-    }
-
-    function hidePreview() {
-        preview.style.display = 'none';
-    }
+    const lBox = document.getElementById('legend-box');
+    data.forEach((d, i) => {
+        lBox.innerHTML += `
+            <div style="display:flex; justify-content:space-between; font-size:13px; padding:10px; background:#f8fafc; border-radius:10px; border:1px solid #f1f5f9;">
+                <span><i style="display:inline-block; width:8px; height:8px; background:${colors[i]}; border-radius:50%; margin-right:5px;"></i> ${d.type}</span>
+                <span><strong>${d.percentage}%</strong> (${d.user_count}명)</span>
+            </div>`;
+    });
 </script>
 {% endblock %}
