@@ -1,16 +1,20 @@
-import secrets
+import secrets, uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
-
 from core.config import settings
 from core.exceptions import BadRequestException
 from core.security import verify_password, create_access_token
 from schema.auth_schema import TokenResponse
 from model.refreshtoken import RefreshToken
 from service.user_service import find_user_by_email, find_user_by_id
+
+from fastapi import HTTPException, status
+from sqlalchemy import select, update, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from model.sales_record import SalesRecord
 
 
 async def login(db: AsyncSession, data: OAuth2PasswordRequestForm):
@@ -81,3 +85,104 @@ async def logout(db: AsyncSession, refresh_token_str: str) -> None:
         delete(RefreshToken)
         .where(RefreshToken.token == refresh_token_str)
     )
+
+
+async def find_completed_orders_by_user(db: AsyncSession, user_id: uuid.UUID) -> list[dict]:
+    result = await db.execute(
+        select(SalesRecord)
+        .options(joinedload(SalesRecord.product))
+        .where(SalesRecord.user_id == user_id)
+        .order_by(SalesRecord.sold_at.desc())
+    )
+    records = result.scalars().all()
+
+    return [
+        {
+            "id": r.id,
+            "sold_at": r.sold_at,
+            "product_id": r.product_id,
+            "product_name": r.product.name if r.product else None,
+            "quantity": r.quantity,
+            "sales_price": r.sales_price,
+            "address": r.address,
+        }
+        for r in records
+    ]
+
+
+async def update_completed_order_quantity(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        order_id: uuid.UUID,
+        quantity: int) -> None:
+    if quantity < 1:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="수량은 1 이상이어야 합니다.",
+        )
+
+    result = await db.execute(
+        select(SalesRecord).where(
+            SalesRecord.id == order_id,
+            SalesRecord.user_id == user_id,
+        )
+    )
+    record = result.scalar_one_or_none()
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="주문을 찾을 수 없습니다.",
+        )
+
+    await db.execute(
+        update(SalesRecord)
+        .where(SalesRecord.id == order_id, SalesRecord.user_id == user_id)
+        .values(quantity=quantity)
+    )
+    await db.commit()
+
+
+async def update_completed_order_address(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        address: str) -> None:
+    if not address or not address.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="주소를 입력해 주세요.",
+        )
+
+    await db.execute(
+        update(SalesRecord)
+        .where(SalesRecord.user_id == user_id)
+        .values(address=address.strip())
+    )
+    await db.commit()
+
+
+async def delete_completed_order(
+        db: AsyncSession,
+        user_id: uuid.UUID,
+        order_id: uuid.UUID) -> None:
+    result = await db.execute(
+        select(SalesRecord).where(
+            SalesRecord.id == order_id,
+            SalesRecord.user_id == user_id,
+        )
+    )
+    record = result.scalar_one_or_none()
+
+    if record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="주문을 찾을 수 없습니다.",
+        )
+
+    await db.execute(
+        delete(SalesRecord).where(
+            SalesRecord.id == order_id,
+            SalesRecord.user_id == user_id,
+        )
+    )
+    await db.commit()

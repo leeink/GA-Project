@@ -1,19 +1,16 @@
 from types import SimpleNamespace
-import uuid
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, Request
 from fastapi.params import Depends, Form
-from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
-from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import HTMLResponse, RedirectResponse
 
 from core.config import templates
 from core.database import get_db
 from core.security import get_current_user_from_cookie
-from schema.auth_schema import TokenResponse, RefreshRequest, LogoutRequest
+from schema.auth_schema import RefreshRequest, LogoutRequest
 from schema.user_schema import UserResponse, UserCreateRequest
-from service.auth_service import login, refresh_token, logout
+from service.auth_service import *
 from service.user_service import create_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -98,6 +95,10 @@ async def mypage(
     current_user = await get_current_user_from_cookie(request, db)
     if current_user is None:
         return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+
+    if current_user.is_admin:
+        return RedirectResponse(url="/admin/dashboard", status_code=status.HTTP_303_SEE_OTHER)
+
     completed_orders = await find_completed_orders_by_user(db, current_user.id)
     latest_order_address = completed_orders[0]["address"] if completed_orders else None
 
