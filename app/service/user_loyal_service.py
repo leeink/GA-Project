@@ -15,7 +15,6 @@ def get_user_stats_cte():
                     (func.count("*") >= 10), 
                     '충성 고객'
                 ),
-                (func.count("*") == 1, '신규 고객'),
                 else_='일반 고객'
             ).label("customer_type")
         )
@@ -37,8 +36,8 @@ async def calculate_customer_ratios(session: AsyncSession, user_stats_cte):
     
     total_users = sum(r.user_count for r in ratios_raw)
     
-    # 순서 보장을 위해 리스트 가공 (충성 -> 신규 -> 일반 순)
-    target_types = ['충성 고객', '신규 고객', '일반 고객']
+    # 순서 보장을 위해 리스트 가공 (충성 -> 일반 순)
+    target_types = ['충성 고객', '일반 고객']
     results_dict = {r.customer_type: r.user_count for r in ratios_raw}
     
     return [
@@ -50,7 +49,7 @@ async def calculate_customer_ratios(session: AsyncSession, user_stats_cte):
     ]
 
 async def get_top_products_by_type(session: AsyncSession, user_stats_cte, customer_type: str):
-    """유형별 선호 상품 TOP 5 추출 (기존 3에서 5로 변경)"""
+    """유형별 선호 상품 TOP 5 추출"""
     stmt = (
         select(Product.name, func.count(SalesRecord.id).label("sell_count"))
         .join(SalesRecord, SalesRecord.product_id == Product.id)
@@ -71,7 +70,6 @@ async def get_customer_analysis_data(session: AsyncSession):
         "ratios": await calculate_customer_ratios(session, user_stats_cte),
         "preferences": {
             "loyal": await get_top_products_by_type(session, user_stats_cte, '충성 고객'),
-            "new": await get_top_products_by_type(session, user_stats_cte, '신규 고객'),
             "normal": await get_top_products_by_type(session, user_stats_cte, '일반 고객')
         }
     }
