@@ -64,10 +64,6 @@
                 <span class="criteria-text"><b>충성고객</b> : 최근 30일 이내 방문 및 누적 주문 10건 이상</span>
             </div>
             <div class="criteria-badge-card">
-                <span class="badge new">신규 고객</span>
-                <span class="criteria-text"><b>신규고객</b> : 생애 첫 주문을 완료한 시작 단계 고객</span>
-            </div>
-            <div class="criteria-badge-card">
                 <span class="badge normal">일반 고객</span>
                 <span class="criteria-text"><b>일반고객</b> : 충성 및 신규 조건에 해당하지 않는 활동 고객</span>
             </div>
@@ -89,13 +85,12 @@
                     <span style="font-size: 14px; color: #64748b; font-weight: 600;">분석 대상 선택:</span>
                     <select id="typeFilter" onchange="filterType()">
                         <option value="0">충성 고객</option>
-                        <option value="1">신규 고객</option>
-                        <option value="2">일반 고객</option>
+                        <option value="1">일반 고객</option>
                     </select>
                 </div>
             </div>
             
-            {% for key, title in [('loyal', '충성'), ('new', '신규'), ('normal', '일반')] %}
+            {% for key, title in [('loyal', '충성'), ('normal', '일반')] %}
             <div class="pref-section" id="section-{{ loop.index0 }}" style="display: {{ 'block' if loop.index0 == 0 else 'none' }};">
                 {% for p in preferences[key] %}
                 <div class="prod-horizontal-item">
@@ -127,6 +122,7 @@
 
         <div class="analysis-card">
             <h3 style="margin:0; font-size: 18px;">회원 구성비</h3>
+            <p class="category-scope-text">* 2026년 누적 데이터</p>
             <div class="chart-main-area">
                 <canvas id="loyalChart"></canvas>
                 <div style="position: absolute; text-align: center; pointer-events: none;">
