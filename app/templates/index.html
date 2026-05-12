@@ -4,263 +4,179 @@
 
 {% block content %}
 <style>
-    .address-search-row {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 8px;
-        align-items: center;
+    /* --- 글로벌 테마 및 레이아웃 --- */
+    :root {
+        --primary: #10b981;
+        --primary-hover: #059669;
+        --secondary: #0f172a;
+        --bg-light: #f8fafc;
+        --border: #e2e8f0;
     }
 
-    .address-search-row .btn {
-        white-space: nowrap;
-    }
-
-    @media (max-width: 520px) {
-        .address-search-row {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .order-confirmation {
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        display: grid;
-        place-items: center;
-        padding: 20px;
-        background: rgba(15, 23, 42, 0.58);
-    }
-
-    .order-confirmation[hidden] {
-        display: none;
-    }
-
-    .order-confirmation-dialog {
-        width: min(100%, 420px);
-        max-height: min(720px, calc(100vh - 40px));
-        overflow-y: auto;
-        border-radius: 8px;
-        background: #fff;
-        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
-    }
-
-    .order-confirmation-head,
-    .order-confirmation-body,
-    .order-confirmation-actions {
-        padding: 20px;
-    }
-
-    .order-confirmation-head {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        border-bottom: 1px solid #e5e7eb;
-    }
-
-    .order-confirmation-head h4 {
-        margin: 0;
-        font-size: 20px;
-    }
-
-    .order-confirmation-head p {
-        margin: 6px 0 0;
-        color: #64748b;
+    /* 상단 사용자 정보 스타일 */
+    .user-greeting {
         font-size: 14px;
+        margin-right: 15px;
+        color: var(--secondary);
+    }
+    .user-greeting b {
+        color: var(--primary);
     }
 
-    .order-confirmation-close {
-        width: 36px;
-        height: 36px;
-        border: 0;
-        border-radius: 50%;
-        background: #f1f5f9;
-        color: #0f172a;
-        cursor: pointer;
-        font-size: 22px;
-        line-height: 1;
-    }
-
-    .order-confirmation-body ul {
-        margin: 0 0 18px;
-        padding-left: 20px;
-    }
-
-    .order-confirmation-actions {
+    /* 탭 메뉴 스타일 */
+    .shop-tabs {
         display: flex;
-        justify-content: flex-end;
-        border-top: 1px solid #e5e7eb;
+        justify-content: center;
+        gap: 20px;
+        margin: 30px 0;
+        border-bottom: 2px solid var(--border);
+    }
+    .tab-btn {
+        padding: 15px 40px;
+        border: none;
+        background: none;
+        font-size: 18px;
+        font-weight: 800;
+        cursor: pointer;
+        color: #94a3b8;
+        transition: 0.3s;
+    }
+    .tab-btn.active {
+        color: var(--primary);
+        border-bottom: 4px solid var(--primary);
+    }
+
+    /* 상세 페이지 버튼 및 레이아웃 */
+    .detail-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 30px;
+    }
+    .btn-large {
+        flex: 1;
+        padding: 18px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 12px;
+        cursor: pointer;
+    }
+
+    /* 주소 입력 필드 스타일 */
+    .addr-input-box {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .addr-row {
+        display: flex;
+        gap: 10px;
+    }
+
+    /* 장바구니 리스트 박스 */
+    .cart-item-summary {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border);
     }
 </style>
 
-{# 상단 고정 메뉴: 브랜드명과 주요 메뉴를 보여준다. #}
 <header class="topbar">
-    <a class="brand" href="#top" aria-label="글로벌프레시 홈">
+    <a class="brand" href="/">
         <span class="brand-mark">F</span>
         <span>글로벌프레시</span>
     </a>
-    <nav class="nav" aria-label="주요 메뉴">
+    <nav class="nav">
         {% if current_user %}
-        <form class="nav-logout" action="/auth/logout/form" method="post">
-            <button class="nav-link" type="submit">로그아웃</button>
-        </form>
-        <a href="/auth/mypage">마이페이지</a>
+            <span class="user-greeting"><b>{{ current_user.username }}</b>님 환영합니다!</span>
+            <a href="/auth/mypage">마이페이지</a>
+            <form action="/auth/logout/form" method="post" style="display:inline;">
+                <button class="nav-link" type="submit">로그아웃</button>
+            </form>
         {% else %}
-        <a href="/auth/register">회원가입</a>
-        <a href="/auth/login">로그인</a>
+            <a href="/auth/login">로그인</a>
+            <a href="/auth/register" class="btn btn-primary" style="color:white;">회원가입</a>
         {% endif %}
     </nav>
 </header>
 
-{# 첫 화면 소개 영역: 쇼핑몰 핵심 문구와 배송/보장 정보를 보여준다. #}
-<section class="hero" id="top">
+<section class="hero">
     <div class="hero-copy">
         <span class="eyebrow">오늘 주문, 내일 차갑게 도착</span>
         <h1>식사, 간식을 든든하게 채우는 한 끼</h1>
-        <p>식사부터 반찬, 안주, 아이들 간식까지. 급속 냉동으로 맛과 식감을 지킨 냉동식품을 합리적인 가격으로 만나보세요.</p>
-        <div class="hero-actions">
-            <button class="btn btn-primary" type="button" data-scroll-target="#products">상품 보기</button>
-            <a class="btn btn-ghost" href="#delivery">배송 안내</a>
-        </div>
-        <div class="hero-stats" aria-label="서비스 요약">
-            <div class="stat">
-                <strong>-18도</strong>
-                <span>콜드체인 포장</span>
-            </div>
-            <div class="stat">
-                <strong>3만원</strong>
-                <span>이상 무료배송</span>
-            </div>
-            <div class="stat">
-                <strong>24시간</strong>
-                <span>신선 보장 접수</span>
-            </div>
+        <p>식사부터 반찬, 안주, 아이들 간식까지. 신선함을 급속 냉동으로 가둔 베스트 상품을 만나보세요.</p>
+        <div class="hero-stats">
+            <div class="stat"><strong>-18도</strong><span>콜드체인 포장</span></div>
+            <div class="stat"><strong>3만원</strong><span>이상 무료배송</span></div>
+            <div class="stat"><strong>24시간</strong><span>신선 보장 접수</span></div>
         </div>
     </div>
 </section>
 
 <main>
-    {# 상품 목록 영역: 검색, 카테고리 필터, 상품 카드, 주문 요약을 포함한다. #}
-    <section id="products" aria-labelledby="productsTitle">
-        <div class="section-head">
-            <div>
-                <h2 id="productsTitle">Best 냉동식품</h2>
-                <p>식사와 간식 메뉴를 골고루 준비했습니다.</p>
-            </div>
-            <div class="filters" aria-label="상품 필터">
-                <button class="filter active" type="button" data-filter="all">전체</button>
-                <button class="filter" type="button" data-filter="meal">식사</button>
-                <button class="filter" type="button" data-filter="snack">간식</button>
-            </div>
-        </div>
+    <nav class="shop-tabs">
+        <button id="tab-p-btn" class="tab-btn active" onclick="switchView('p')">상품 쇼핑</button>
+        <button id="tab-c-btn" class="tab-btn" onclick="switchView('c')">장바구니/주문</button>
+    </nav>
 
-        {# 상품명 검색 폼: product_router.py의 /product/search 라우터로 검색어를 보낸다. #}
-        <form class="product-search" action="/product/search" method="get">
-            <input
-                type="text"
-                name="name"
-                value="{{ search or '' }}"
-                placeholder="상품명을 입력하세요"
-                aria-label="상품명 검색"
-            >
-            <button class="btn btn-primary" type="submit">검색</button>
-        </form>
+    <section id="product-section">
+        <div id="product-main-grid" class="products">
+            </div>
+        <div id="product-detail-view" class="product-page" hidden>
+            </div>
+    </section>
 
+    <section id="order-section" hidden>
         <div class="shop-layout">
-            {# JavaScript가 DB에서 받은 상품 데이터를 카드 형태로 렌더링하는 위치다. #}
-            <div class="products" id="productGrid"></div>
-
-            {# 선택한 상품 수량과 결제 예정 금액을 화면에서 계산해 보여주는 주문 요약 영역이다. #}
-            <div class="inline-order" aria-labelledby="orderSummaryTitle">
-                <div class="order-summary">
-                    <h3 id="orderSummaryTitle">선택 상품</h3>
-                    <p class="empty" id="selectedItemsText">상품 카드에서 수량을 선택해 주세요.</p>
-                    <div class="summary-row">
-                        <span>상품 금액</span>
-                        <strong id="subtotal">0원</strong>
-                    </div>
-                    <div class="summary-row">
-                        <span>배송비</span>
-                        <strong id="deliveryFee">0원</strong>
-                    </div>
-                    <div class="summary-row total">
-                        <span>결제 예정</span>
-                        <strong id="total">0원</strong>
-                    </div>
-                    <p class="notice">3만원 이상 구매 시 무료배송입니다. 냉동 포장재와 드라이아이스가 함께 출고됩니다.</p>
+            <div class="order-summary">
+                <h3>🛒 내 장바구니</h3>
+                <div id="cart-render-area" style="margin: 20px 0;">
+                    <p class="empty">장바구니가 비어있습니다.</p>
                 </div>
-                <form class="order-form" id="orderForm">
-                    <h3>배송 정보</h3>
-                    <div class="field">
-                        <label for="customerName">주문자명</label>
-                        <input id="customerName" name="name" type="text" autocomplete="name" required>
-                    </div>
-                    <div class="field">
-                        <label for="customerPostcode">우편번호</label>
-                        <div class="address-search-row">
-                            <input id="customerPostcode" type="text" inputmode="numeric" placeholder="주소 검색을 눌러주세요" readonly>
-                            <button class="btn btn-ghost" id="addressSearchButton" type="button">주소 검색</button>
-                        </div>
-                    </div>
-                    <div class="field">
-                        <label for="customerBaseAddress">기본 주소</label>
-                        <input id="customerBaseAddress" type="text" autocomplete="street-address" placeholder="검색한 주소가 입력됩니다" readonly required>
-                    </div>
-                    <div class="field">
-                        <label for="customerDetailAddress">상세 주소</label>
-                        <input id="customerDetailAddress" type="text" autocomplete="address-line2" placeholder="동/호수 등 상세주소를 입력하세요" required>
-                    </div>
-                    <input id="customerAddress" name="address" type="hidden">
-                    <div class="field">
-                        <label for="customerMemo">배송 요청사항</label>
-                        {# name 속성이 없어서 화면 입력만 받고 서버 전송 데이터에는 포함하지 않는다. #}
-                        <textarea id="customerMemo" placeholder="예: 문 앞에 놓아주세요."></textarea>
-                    </div>
-                    <p class="form-message" id="orderMessage" aria-live="polite"></p>
-                    <div class="order-confirmation" id="orderConfirmation" hidden></div>
-                    <button class="btn btn-primary checkout" type="submit">주문하기</button>
-                </form>
+                <hr>
+                <div class="summary-row total"><span>총 결제 금액</span><strong id="final-price-tag">0원</strong></div>
             </div>
+
+            <form class="order-form" id="order-final-form">
+                <h3>🚚 배송 정보</h3>
+                <div class="field">
+                    <label>수령인</label>
+                    <input type="text" id="buyer-name-input" value="{{ current_user.username if current_user else '' }}" required>
+                </div>
+                <div class="field">
+                    <label>배송지 주소</label>
+                    <div class="addr-input-box">
+                        <div class="addr-row">
+                            <input type="text" id="post-code-field" readonly placeholder="우편번호" style="width:120px;">
+                            <button type="button" class="btn btn-ghost" onclick="openDaumPost()">주소 검색</button>
+                        </div>
+                        <input type="text" id="addr-base-field" readonly placeholder="기본 주소 (검색 시 자동 입력)" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; height:60px; font-size:18px;">결제 및 주문하기</button>
+            </form>
         </div>
     </section>
 
-    {# 상품 카드를 클릭했을 때 목록 대신 상세 화면을 보여주는 영역이다. #}
-    <section class="product-page" id="productPage" hidden aria-live="polite"></section>
-
-    {# 배송/품질 안내 카드 영역이다. #}
-    <section class="features" id="delivery" aria-label="배송 및 품질 혜택">
+    <section class="features">
         <article class="feature">
             <div class="feature-icon">01</div>
             <h3>콜드체인 배송</h3>
-            <p>출고부터 문 앞까지 냉동 상태를 유지하는 보냉 포장으로 보냅니다.</p>
+            <p>출고부터 문 앞까지 냉동 상태를 유지하는 전용 보냉 포장으로 보냅니다.</p>
         </article>
         <article class="feature">
             <div class="feature-icon">02</div>
             <h3>간편한 재구매</h3>
-            <p>자주 먹는 메뉴를 중심으로 구성해 장보기 시간을 줄여줍니다.</p>
-        </article>
-        <article class="feature" id="quality">
-            <div class="feature-icon">03</div>
-            <h3>선별 입고</h3>
-            <p>보관 온도와 유통기한을 확인한 상품만 판매합니다.</p>
+            <p>자주 찾는 메뉴를 중심으로 구성해 장보기 시간을 획기적으로 줄여줍니다.</p>
         </article>
         <article class="feature">
-            <div class="feature-icon">04</div>
-            <h3>든든한 구성</h3>
-            <p>한 끼 식사, 야식, 아이 간식까지 냉동실 상황에 맞게 고를 수 있습니다.</p>
+            <div class="feature-icon">03</div>
+            <h3>선별 입고</h3>
+            <p>보관 온도와 유통기한을 매일 확인한 검증된 상품만 판매합니다.</p>
         </article>
-    </section>
-
-    {# 이메일 구독 폼 영역이다. 현재는 화면에서 알림만 띄운다. #}
-    <section class="band" aria-labelledby="newsletterTitle">
-        <div>
-            <h2 id="newsletterTitle">이번 주 특가를 먼저 받아보세요</h2>
-            <p>신상품 입고, 묶음 할인, 시즌 메뉴 소식을 이메일로 보내드립니다.</p>
-        </div>
-        <form class="newsletter">
-            <input type="email" aria-label="이메일 주소" placeholder="email@example.com">
-            <button class="btn btn-primary" type="submit">구독하기</button>
-        </form>
     </section>
 </main>
 
@@ -271,422 +187,172 @@
 
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
-    // 상품명과 로컬 이미지 파일을 연결한다. DB 상품명이 이 이름과 같으면 해당 이미지가 사용된다.
-    const productImageByName = {
-        "삼겹살 구이": "/static/images/products/pork-belly.png",
-        "소불고기 덮밥": "/static/images/products/bulgogi-rice.png",
-        "새우볶음밥": "/static/images/products/shrimp-fried-rice.png",
-        "치킨 도리아": "/static/images/products/chicken-doria.png",
-        "낙지볶음 도시락": "/static/images/products/spicy-octopus-lunchbox.png",
-        "모짜렐라 스틱": "/static/images/products/mozzarella-sticks.png",
-        "감자튀김": "/static/images/products/french-fries.png",
-        "오징어링": "/static/images/products/calamari-rings.png",
-        "핫도그": "/static/images/products/corn-dog.png",
-        "치즈볼": "/static/images/products/cheese-balls.png"
-    };
-
-    // 상품명에 맞는 이미지가 없을 때 카테고리별 기본 이미지를 사용한다.
-    const fallbackImageByCategory = {
-        meal: "/static/images/products/bulgogi-rice.png",
-        snack: "/static/images/products/french-fries.png"
-    };
-
-    // FastAPI에서 전달한 products 데이터를 JavaScript 상품 배열로 변환한다.
+    const IS_LOGGED_IN = {{ 'true' if is_logged_in else 'false' }};
+    
+    // 1. 상품 데이터 및 이미지 매칭 로직
     const products = [
-        {% for product in products %}
+        {% for p in products %}
         {
-            id: {{ product.id|string|tojson }},
-            name: {{ product.name|tojson }},
-            category: {{ product.category.value|tojson }},
-            storageType: {{ product.storage_type.value|tojson }},
-            badge: {{ ("간편식" if product.category.value == "meal" else "간식")|tojson }},
-            icon: {{ ("🍱" if product.category.value == "meal" else "🧀")|tojson }},
-            price: {{ product.cost or 0 }},
-            quantity: {{ product.quantity or 0 }},
-            imageIndex: {{ loop.index0 }},
-            desc: {{ ("재고 " ~ (product.quantity or 0) ~ "개 · " ~ ("냉동 보관" if product.storage_type.value == "frozen" else "신선 보관"))|tojson }},
-            bg: {{ ("linear-gradient(135deg, #e5f7f5, #fff2d6)" if product.category.value == "meal" else "linear-gradient(135deg, #ffe9df, #f5f7fb)")|tojson }}
+            id: "{{ p.id }}",
+            name: {{ p.name|tojson }},
+            price: {{ p.cost }},
+            stock: {{ p.total_avail_qty or 0 }},
+            img: (n => {
+                if (n.includes('삼겹살')) return "/static/images/products/pork-belly.png";
+                if (n.includes('불고기')) return "/static/images/products/bulgogi-rice.png";
+                if (n.includes('새우볶음밥')) return "/static/images/products/shrimp-fried-rice.png";
+                if (n.includes('치즈볼')) return "/static/images/products/cheese-balls.png";
+                if (n.includes('도리아')) return "/static/images/products/chicken-doria.png";
+                if (n.includes('낙지')) return "/static/images/products/spicy-octopus-lunchbox.png";
+                if (n.includes('모짜렐라')) return "/static/images/products/mozzarella-sticks.png";
+                if (n.includes('감자튀김')) return "/static/images/products/french-fries.png";
+                if (n.includes('오징어')) return "/static/images/products/calamari-rings.png";
+                if (n.includes('핫도그')) return "/static/images/products/corn-dog.png";
+                return "/static/images/products/default.png";
+            })({{ p.name|tojson }})
         }{% if not loop.last %},{% endif %}
         {% endfor %}
-    ].map(product => ({
-        ...product,
-        imageUrl: productImageByName[product.name] || fallbackImageByCategory[product.category]
-    }));
+    ];
 
-    // 브라우저 안에서만 사용하는 임시 장바구니다. 현재 DB cart 테이블과 직접 연결되어 있지는 않다.
     const cart = new Map();
-    let currentFilter = "{{ category or 'all' }}";
-    let selectedProductId = null;
 
-    // 자주 사용하는 화면 요소를 미리 찾아둔다.
-    const productsSection = document.querySelector("#products");
-    const productGrid = document.querySelector("#productGrid");
-    const productPage = document.querySelector("#productPage");
-    const selectedItemsText = document.querySelector("#selectedItemsText");
-    const subtotalEl = document.querySelector("#subtotal");
-    const deliveryFeeEl = document.querySelector("#deliveryFee");
-    const totalEl = document.querySelector("#total");
-    const orderForm = document.querySelector("#orderForm");
-    const orderMessage = document.querySelector("#orderMessage");
-    const orderConfirmation = document.querySelector("#orderConfirmation");
-    const addressSearchButton = document.querySelector("#addressSearchButton");
-    const customerPostcode = document.querySelector("#customerPostcode");
-    const customerBaseAddress = document.querySelector("#customerBaseAddress");
-    const customerDetailAddress = document.querySelector("#customerDetailAddress");
-    const customerAddress = document.querySelector("#customerAddress");
+    // 2. 페이지 로드 시 자동 주소 입력 (우편번호 + 통합 주소)
+    window.onload = () => {
+        const lastFullAddr = "{{ last_address }}";
+        if (lastFullAddr) {
+            const match = lastFullAddr.match(/^\((\d+)\)\s*(.*)$/);
+            if (match) {
+                document.getElementById('post-code-field').value = match[1];
+                document.getElementById('addr-base-field').value = match[2];
+            }
+        }
+        renderProductGrid();
+    };
 
-    const formatWon = value => value.toLocaleString("ko-KR") + "원";
-
-    // 우편번호, 기본 주소, 상세 주소를 주문 API로 보낼 하나의 배송 주소로 합친다.
-    function updateCustomerAddress() {
-        const postcode = customerPostcode.value.trim();
-        const baseAddress = customerBaseAddress.value.trim();
-        const detailAddress = customerDetailAddress.value.trim();
-
-        customerAddress.value = [
-            postcode ? `(${postcode})` : "",
-            baseAddress,
-            detailAddress
-        ].filter(Boolean).join(" ");
-
-        return customerAddress.value;
+    function switchView(mode) {
+        document.getElementById('product-section').hidden = (mode !== 'p');
+        document.getElementById('order-section').hidden = (mode !== 'c');
+        document.getElementById('tab-p-btn').classList.toggle('active', mode === 'p');
+        document.getElementById('tab-c-btn').classList.toggle('active', mode === 'c');
     }
 
-    // 다음 우편번호 서비스를 열고 선택한 주소를 배송 정보 입력칸에 반영한다.
-    function openAddressSearch() {
-        if (!window.daum?.Postcode) {
-            orderMessage.classList.remove("success");
-            orderMessage.textContent = "주소 검색 서비스를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    function renderProductGrid() {
+        document.getElementById('product-main-grid').innerHTML = products.map(p => `
+            <article class="product" onclick="showDetail('${p.id}')">
+                <div class="product-media"><img src="${p.img}" class="product-photo"></div>
+                <div class="product-body">
+                    <h3>${p.name}</h3>
+                    <p>${p.price.toLocaleString()}원 (재고: ${p.stock}개)</p>
+                    <div class="product-bottom"><button class="view-product">상세보기</button></div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function showDetail(id) {
+        const p = products.find(x => x.id === id);
+        const detail = document.getElementById('product-detail-view');
+        document.getElementById('product-main-grid').hidden = true;
+        detail.hidden = false;
+        detail.innerHTML = `
+            <div class="product-detail">
+                <div class="detail-media"><img src="${p.img}" style="width:100%; border-radius:12px;"></div>
+                <div class="detail-body">
+                    <button class="btn btn-ghost" onclick="closeDetail()">← 뒤로가기</button>
+                    <h2>${p.name}</h2>
+                    <p class="price" style="font-size:32px; color:var(--primary); font-weight:800;">${p.price.toLocaleString()}원</p>
+                    <div class="detail-actions">
+                        <button class="btn btn-ghost btn-large" onclick="handleCartAction('${p.id}', false)">장바구니 담기</button>
+                        <button class="btn btn-primary btn-large" onclick="handleCartAction('${p.id}', true)">바로 구매하기</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function closeDetail() {
+        document.getElementById('product-main-grid').hidden = false;
+        document.getElementById('product-detail-view').hidden = true;
+    }
+
+    // 3. 장바구니 및 '바로 구매' (로그인 체크 포함) 로직
+    function handleCartAction(id, isDirect) {
+        if (isDirect && !IS_LOGGED_IN) {
+            alert('주문을 위해 로그인이 필요합니다.');
+            location.href = '/auth/login';
             return;
         }
 
+        const p = products.find(x => x.id === id);
+        if (p.stock <= 0) return alert("현재 품절된 상품입니다.");
+
+        const item = cart.get(id) || { ...p, count: 0 };
+        cart.set(id, { ...item, count: item.count + 1 });
+        
+        updateCartUI();
+        if (isDirect) switchView('c');
+        else alert('장바구니에 담겼습니다.');
+    }
+
+    function updateCartUI() {
+        const list = document.getElementById('cart-render-area');
+        const items = [...cart.values()];
+        if (items.length === 0) {
+            list.innerHTML = '<p class="empty">장바구니가 비어있습니다.</p>';
+        } else {
+            list.innerHTML = items.map(i => `
+                <div class="cart-item-summary">
+                    <span><b>${i.name}</b> (${i.count}개)</span>
+                    <button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer;">삭제</button>
+                </div>
+            `).join('');
+        }
+        const sub = items.reduce((s, i) => s + (i.price * i.count), 0);
+        const total = sub + (sub >= 30000 || sub === 0 ? 0 : 3000);
+        document.getElementById('final-price-tag').innerText = total.toLocaleString() + '원';
+    }
+
+    function openDaumPost() {
         new daum.Postcode({
-            oncomplete(data) {
-                customerPostcode.value = data.zonecode || "";
-                customerBaseAddress.value = data.roadAddress || data.jibunAddress || "";
-                customerDetailAddress.value = "";
-                updateCustomerAddress();
-                customerDetailAddress.focus();
+            oncomplete: (data) => {
+                document.getElementById('post-code-field').value = data.zonecode;
+                let addr = data.roadAddress;
+                let extra = '';
+                if(data.bname !== '') extra += data.bname;
+                if(data.buildingName !== '') extra += (extra !== '' ? ', ' + data.buildingName : data.buildingName);
+                // 주소와 상세항목을 합쳐서 하나의 필드(addr-base-field)에 입력
+                document.getElementById('addr-base-field').value = addr + (extra !== '' ? ' (' + extra + ')' : '');
             }
         }).open();
     }
 
-    function closeOrderConfirmation() {
-        orderConfirmation.hidden = true;
-        orderConfirmation.innerHTML = "";
-    }
+    document.getElementById('order-final-form').onsubmit = async (e) => {
+        e.preventDefault();
+        if (cart.size === 0) return alert('장바구니에 상품을 담아주세요.');
 
-    function openOrderConfirmation(result) {
-        orderConfirmation.innerHTML = `
-            <div class="order-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="orderCompleteTitle" tabindex="-1">
-                <div class="order-confirmation-head">
-                    <div>
-                        <h4 id="orderCompleteTitle">주문완료</h4>
-                        <p>주문이 정상적으로 접수되었습니다.</p>
-                    </div>
-                    <button class="order-confirmation-close" type="button" aria-label="주문완료 팝업 닫기" data-order-popup-close>&times;</button>
-                </div>
-                <div class="order-confirmation-body">
-                    <ul>
-                        ${result.ordered_items.map(item => `
-                            <li>${item.name} ${item.quantity}개</li>
-                        `).join("")}
-                    </ul>
-                    <div class="summary-row">
-                        <span>배송주소</span>
-                        <strong>${result.address}</strong>
-                    </div>
-                </div>
-                <div class="order-confirmation-actions">
-                    <button class="btn btn-primary" type="button" data-order-popup-close>확인</button>
-                </div>
-            </div>
-        `;
-        orderConfirmation.hidden = false;
-        orderConfirmation.querySelector(".order-confirmation-dialog").focus();
-    }
+        const fullAddr = `(${document.getElementById('post-code-field').value}) ${document.getElementById('addr-base-field').value}`;
 
-    // 장바구니에서 특정 상품의 선택 수량을 가져온다.
-    function productQuantity(productId) {
-        return cart.get(productId)?.qty || 0;
-    }
+        const res = await fetch('/product/order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                item: Object.fromEntries([...cart.entries()].map(([id, d]) => [id, d.count])),
+                address: fullAddr
+            })
+        });
 
-    // 상품 배열을 현재 필터에 맞춰 카드 목록으로 그린다.
-    function renderProducts(filter = "all") {
-        const visibleProducts = products.filter(product => filter === "all" || product.category === filter);
-
-        if (!visibleProducts.length) {
-            productGrid.innerHTML = `<p class="empty product-empty">상품이 없습니다.</p>`;
+        if (res.status === 401) {
+            alert('로그인이 만료되었습니다.');
+            location.href = '/auth/login';
             return;
         }
 
-        productGrid.innerHTML = visibleProducts
-            .map(product => `
-                <article class="product${product.id === selectedProductId ? " active" : ""}" data-id="${product.id}" tabindex="0" aria-label="${product.name} 상세 보기">
-                    <div class="product-media" style="--media-bg: ${product.bg}">
-                        <img class="product-photo" src="${product.imageUrl}" alt="${product.name}" loading="lazy">
-                        <span class="badge">${product.badge}</span>
-                    </div>
-                    <div class="product-body">
-                        <h3>${product.name}</h3>
-                        <p class="product-desc">${product.desc}</p>
-                        <div class="product-bottom">
-                            <span class="price">${formatWon(product.price)}</span>
-                            <button class="view-product" type="button" data-id="${product.id}">상품 보기</button>
-                        </div>
-                    </div>
-                </article>
-            `).join("");
-    }
-
-    // 선택한 상품의 상세 화면과 수량 선택 버튼을 그린다.
-    function renderProductDetail() {
-        const product = products.find(item => item.id === selectedProductId);
-
-        if (!product) {
-            productPage.hidden = true;
-            productPage.innerHTML = "";
-            productsSection.hidden = false;
-            return;
-        }
-
-        const qty = productQuantity(product.id);
-        productPage.hidden = false;
-        productsSection.hidden = true;
-        productPage.innerHTML = `
-            <div class="product-detail" style="--media-bg: ${product.bg}">
-                <div class="detail-media">
-                    <img class="detail-photo" src="${product.imageUrl}" alt="${product.name}">
-                    <span class="badge">${product.badge}</span>
-                </div>
-                <div class="detail-body">
-                    <div class="detail-top">
-                        <div>
-                            <span class="eyebrow">${product.badge}</span>
-                            <h3>${product.name}</h3>
-                        </div>
-                        <button class="detail-close" type="button" data-action="back">목록으로</button>
-                    </div>
-                    <p>${product.desc}</p>
-                    <div class="detail-order">
-                        <span class="price">${formatWon(product.price)}</span>
-                        <strong>${formatWon(product.price * qty)}</strong>
-                    </div>
-                    <div class="count-box">
-                        <span>수량 선택</span>
-                        <div class="qty" aria-label="${product.name} 선택 수량">
-                            <button type="button" data-action="decrease" data-id="${product.id}" aria-label="${product.name} 수량 줄이기">-</button>
-                            <strong>${qty}</strong>
-                            <button type="button" data-action="increase" data-id="${product.id}" aria-label="${product.name} 수량 늘리기">+</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    // 장바구니 수량, 상품 금액, 배송비, 결제 예정 금액을 다시 계산해 화면에 반영한다.
-    function renderCart() {
-        const items = [...cart.values()];
-        const count = items.reduce((sum, item) => sum + item.qty, 0);
-        const subtotal = items.reduce((sum, item) => sum + item.price * item.qty, 0);
-        const deliveryFee = subtotal === 0 || subtotal >= 30000 ? 0 : 3000;
-
-        selectedItemsText.textContent = items.length
-            ? items.map(item => `${item.name} ${item.qty}개`).join(", ")
-            : "상품 카드에서 수량을 선택해 주세요.";
-        subtotalEl.textContent = formatWon(subtotal);
-        deliveryFeeEl.textContent = formatWon(deliveryFee);
-        totalEl.textContent = formatWon(subtotal + deliveryFee);
-    }
-
-    // 상품 카드를 클릭하면 해당 상품의 상세 화면으로 전환한다.
-    productGrid.addEventListener("click", event => {
-        const card = event.target.closest(".product");
-        if (!card) return;
-
-        selectedProductId = card.dataset.id;
-        renderProducts(currentFilter);
-        renderProductDetail();
-        productPage.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    // 키보드 접근성을 위해 Enter/Space로도 상품 상세 화면을 열 수 있게 한다.
-    productGrid.addEventListener("keydown", event => {
-        if (event.key !== "Enter" && event.key !== " ") return;
-
-        const card = event.target.closest(".product");
-        if (!card) return;
-
-        event.preventDefault();
-        selectedProductId = card.dataset.id;
-        renderProducts(currentFilter);
-        renderProductDetail();
-        productPage.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-
-    // 상세 화면에서 목록 이동, 수량 증가, 수량 감소 버튼을 처리한다.
-    productPage.addEventListener("click", event => {
-        const button = event.target.closest("button[data-action]");
-        if (!button) return;
-
-        if (button.dataset.action === "back") {
-            selectedProductId = null;
-            renderProducts(currentFilter);
-            renderProductDetail();
-            productsSection.scrollIntoView({ behavior: "smooth", block: "start" });
-            return;
-        }
-
-        const product = products.find(item => item.id === button.dataset.id);
-        if (!product) return;
-
-        if (button.dataset.action === "increase") {
-            const current = cart.get(product.id);
-            cart.set(product.id, { ...product, qty: current ? current.qty + 1 : 1 });
+        if (res.ok) {
+            alert('주문이 성공적으로 접수되었습니다!');
+            location.reload();
         } else {
-            const current = cart.get(product.id);
-            if (!current) return;
-
-            current.qty -= 1;
-            if (current.qty <= 0) {
-                cart.delete(product.id);
-            }
+            alert('주문 처리 중 오류가 발생했습니다.');
         }
-
-        renderProducts(currentFilter);
-        renderProductDetail();
-        renderCart();
-    });
-
-    // 전체/식사/간식 필터 버튼을 누르면 상품 목록을 다시 그린다.
-    document.querySelectorAll(".filter").forEach(button => {
-        if (button.dataset.filter === currentFilter) {
-            document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
-            button.classList.add("active");
-        }
-
-        button.addEventListener("click", () => {
-            document.querySelectorAll(".filter").forEach(item => item.classList.remove("active"));
-            button.classList.add("active");
-            currentFilter = button.dataset.filter;
-            if (selectedProductId && currentFilter !== "all") {
-                const selected = products.find(product => product.id === selectedProductId);
-                if (selected?.category !== currentFilter) {
-                    selectedProductId = null;
-                    renderProductDetail();
-                }
-            }
-            renderProducts(currentFilter);
-        });
-    });
-
-    // data-scroll-target 속성이 있는 버튼을 누르면 해당 영역으로 부드럽게 이동한다.
-    document.querySelectorAll("[data-scroll-target]").forEach(button => {
-        button.addEventListener("click", () => {
-            document.querySelector(button.dataset.scrollTarget).scrollIntoView({
-                behavior: "smooth"
-            });
-        });
-    });
-
-    // 구독 폼은 실제 저장 없이 화면 알림만 보여준다.
-    document.querySelector(".newsletter").addEventListener("submit", event => {
-        event.preventDefault();
-        event.currentTarget.reset();
-        alert("구독 신청이 완료되었습니다.");
-    });
-
-    addressSearchButton.addEventListener("click", openAddressSearch);
-    customerDetailAddress.addEventListener("input", updateCustomerAddress);
-    orderConfirmation.addEventListener("click", event => {
-        if (event.target === orderConfirmation || event.target.closest("[data-order-popup-close]")) {
-            closeOrderConfirmation();
-        }
-    });
-
-    document.addEventListener("keydown", event => {
-        if (event.key === "Escape" && !orderConfirmation.hidden) {
-            closeOrderConfirmation();
-        }
-    });
-
-    // 주문 폼은 DB 저장 API 응답을 확인한 뒤 주문 완료 메시지를 보여준다.
-    orderForm.addEventListener("submit", async event => {
-        event.preventDefault();
-        const orderItems = Object.fromEntries(
-            [...cart.entries()].map(([productId, product]) => [productId, product.qty])
-        );
-
-        if (!Object.keys(orderItems).length) {
-            orderMessage.classList.remove("success");
-            orderMessage.textContent = "주문할 상품을 먼저 선택해 주세요.";
-            orderConfirmation.hidden = true;
-            orderConfirmation.innerHTML = "";
-            return;
-        }
-
-        if (!customerBaseAddress.value.trim()) {
-            orderMessage.classList.remove("success");
-            orderMessage.textContent = "주소 검색으로 배송지를 선택해 주세요.";
-            orderConfirmation.hidden = true;
-            orderConfirmation.innerHTML = "";
-            customerBaseAddress.focus();
-            return;
-        }
-
-        if (!customerDetailAddress.value.trim()) {
-            orderMessage.classList.remove("success");
-            orderMessage.textContent = "상세 주소를 입력해 주세요.";
-            orderConfirmation.hidden = true;
-            orderConfirmation.innerHTML = "";
-            customerDetailAddress.focus();
-            return;
-        }
-
-        updateCustomerAddress();
-
-        const submitButton = orderForm.querySelector(".checkout");
-        submitButton.disabled = true;
-        orderMessage.classList.remove("success");
-        orderMessage.textContent = "주문을 저장하고 있습니다.";
-        orderConfirmation.hidden = true;
-        orderConfirmation.innerHTML = "";
-
-        try {
-            const response = await fetch("/product/order", {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({
-                    item: orderItems,
-                    address: customerAddress.value,
-                })
-            });
-            const result = await response.json();
-
-            if (!response.ok || !result.saved) {
-                throw new Error(result.detail || "주문 저장에 실패했습니다.");
-            }
-
-            cart.clear();
-            orderForm.reset();
-            renderProductDetail();
-            renderCart();
-            orderMessage.classList.add("success");
-            orderMessage.textContent = "주문완료";
-            openOrderConfirmation(result);
-        } catch (error) {
-            orderMessage.classList.remove("success");
-            orderMessage.textContent = error.message || "주문 저장 중 오류가 발생했습니다.";
-            orderConfirmation.hidden = true;
-        } finally {
-            submitButton.disabled = false;
-        }
-    });
-
-    // 페이지가 처음 열릴 때 상품 목록, 상세 영역, 장바구니 요약을 초기화한다.
-    renderProducts(currentFilter);
-    renderProductDetail();
-    renderCart();
+    };
 </script>
 {% endblock %}
