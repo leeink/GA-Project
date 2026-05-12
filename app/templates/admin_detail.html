@@ -105,52 +105,77 @@
     <canvas id="barChart" style="max-height:280px;"></canvas>
 </div>
 
-{# ── [추가 섹션] AI 매출 예측 분석 (드롭박스 연동형) ── #}
-<div class="grid-2" style="margin-top: 24px; margin-bottom: 24px;">
-    {# 왼쪽: 선택 연도 실적 기반 2026년 단기 예측 #}
+{# ── [수정] 사이킷런 머신러닝 이중 막대 차트 (다시 세로형으로 복구!) ── #}
+<div class="card" style="margin-top: 24px; margin-bottom: 24px;">
+    <div class="card-header">
+        <div>
+            <div class="card-title">AI 2026 예측 vs {{ year }}년 실적 비교</div>
+            <div class="card-subtitle">Scikit-Learn Random Forest 모델 (2015~2025 데이터 학습)</div>
+        </div>
+    </div>
+    <div style="padding: 10px 20px 20px 20px; height: 400px; position: relative;">
+        <canvas id="dualBarChart"></canvas>
+    </div>
+</div>
+
+{# ── [유지] 신제품 매출 예측 차트 (가로형 막대) ── #}
+<div class="grid-2" style="margin-bottom: 24px;">
+    {# 왼쪽: 식사류 신제품 예측 #}
     <div class="card">
         <div class="card-header">
             <div>
-                <div class="card-title">{{ year }}년 실적 기반 2026년 단기 예측</div>
-                <div class="card-subtitle">현재 1~4월 실적과 {{ year }}년 대비 성장률 반영</div>
+                <div class="card-title">신제품 AI 매출 예측 (식사류)</div>
+                <div class="card-subtitle">기존 베스트셀러 속성 시너지 분석</div>
             </div>
         </div>
-        <canvas id="shortTermChart" style="max-height:220px;"></canvas>
+        <div style="padding: 10px 20px 10px 10px; height: 260px; position: relative;">
+            <canvas id="mealNewChart"></canvas>
+        </div>
     </div>
 
-    {# 오른쪽: 10년 장기 예측 (고정) #}
+    {# 오른쪽: 스낵류 신제품 예측 #}
     <div class="card">
         <div class="card-header">
             <div>
-                <div class="card-title">10년 장기 추세 예측 (2015~2025 고정)</div>
-                <div class="card-subtitle">과거 10년 CAGR 적용 후 2026년 추산</div>
+                <div class="card-title">신제품 AI 매출 예측 (스낵류)</div>
+                <div class="card-subtitle">하위권 상품 프리미엄화 결합 분석</div>
             </div>
         </div>
-        <canvas id="longTermChart" style="max-height:220px;"></canvas>
+        <div style="padding: 10px 20px 10px 10px; height: 260px; position: relative;">
+            <canvas id="snackNewChart"></canvas>
+        </div>
     </div>
 </div>
 
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
 <script>
-// ── 기존 데이터 변수 ──
+// ── 기존 상단 차트 데이터 변수 ──
 const QUARTERLY = {{ quarterly_data | tojson }};
-const MONTHLY   = {{ monthly_data   | tojson }};
+const MONTHLY   = {{ monthly_data   | tojson }}; 
 const P_LABELS  = {{ product_labels | tojson }};
 const P_DATA    = {{ product_data    | tojson }};
 
-// ── [추가] 예측 데이터 변수 (선택된 year 기반 데이터) ──
-const SHORT_TERM_DATA = {{ short_term_data | tojson }};
-const LONG_TERM_DATA  = {{ long_term_data | tojson }};
+// ── 사이킷런 AI 예측 변수 ──
+const AI_2026_DATA = {{ ai_2026_data | tojson }};
 
 const GREEN  = ['#2d6a4f','#40916c','#52b788','#95d5b2'];
 const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
 function fmtWon(v) {
+    if (!v) return '';
     if (v >= 100_000_000) return '₩' + (v / 100_000_000).toFixed(1) + '억';
     if (v >= 10_000)      return '₩' + (v / 10_000).toFixed(0) + '만';
-    return '₩' + v.toLocaleString();
+    return '₩' + Math.floor(v).toLocaleString();
+}
+
+// 데이터 라벨 플러그인 기본 비활성화 (필요한 차트만 켬)
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+    Chart.defaults.set('plugins.datalabels', { display: false });
 }
 
 // ── 기존 도넛 차트 ──
@@ -175,7 +200,6 @@ new Chart(donutCtx, {
     }
 });
 
-// 도넛 중앙 합계 & 범례
 const totalQ = QUARTERLY.reduce((a, b) => a + b, 0);
 document.getElementById('donut-total').textContent = fmtWon(totalQ);
 
@@ -221,10 +245,7 @@ new Chart(lineCtx, {
         }},
         scales: {
             x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
-            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: {
-                font: { size: 11 },
-                callback: v => fmtWon(v)
-            }}
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 }, callback: v => fmtWon(v) }}
         }
     }
 });
@@ -255,108 +276,128 @@ new Chart(barCtx, {
         indexAxis: isHorizontal ? 'y' : 'x',
         plugins: {
             legend: { display: false },
-            tooltip: {
-                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
-            }
+            tooltip: { callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` } }
         },
         scales: {
-            x: {
-                grid: { color: 'rgba(0,0,0,0.04)' },
-                ticks: {
-                    font: { size: 11 },
-                    callback: isHorizontal
-                        ? v => fmtWon(v)
-                        : (_, index) => P_LABELS[index]
-                }
-            },
-            y: {
-                grid: { color: 'rgba(0,0,0,0.04)' },
-                ticks: {
-                    font: { size: 11 },
-                    callback: isHorizontal
-                        ? (_, index) => P_LABELS[index]
-                        : v => fmtWon(v)
-                }
-            }
+            x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 }, callback: isHorizontal ? v => fmtWon(v) : (_, index) => P_LABELS[index] } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 }, callback: isHorizontal ? (_, index) => P_LABELS[index] : v => fmtWon(v) } }
         }
     }
 });
 
-// ── [추가] 단기 예측 차트 (Bar) ──
-const shortCtx = document.getElementById('shortTermChart').getContext('2d');
-new Chart(shortCtx, {
+// ── 1. 전체 월별 예측 이중 막대 차트 (다시 세로형으로 복구) ──
+const dualCtx = document.getElementById('dualBarChart').getContext('2d');
+new Chart(dualCtx, {
+    type: 'bar', // indexAxis: 'y' 옵션 제거해서 기본 세로형으로!
+    data: {
+        labels: MONTHS, // 가로축이 다시 1~12월
+        datasets: [
+            {
+                label: '2026년 AI 예측',
+                data: AI_2026_DATA,
+                backgroundColor: '#3498db',
+                borderRadius: 4,
+                barPercentage: 0.8,
+                categoryPercentage: 0.8
+            },
+            {
+                label: '{{ year }}년 실제 실적',
+                data: MONTHLY,
+                backgroundColor: '#95a5a6',
+                borderRadius: 4,
+                barPercentage: 0.8,
+                categoryPercentage: 0.8
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { 
+            padding: { top: 30 } // 💡 숫자가 차트 천장에 잘리지 않게 위쪽 여백 확보
+        },
+        plugins: {
+            legend: { position: 'top', labels: { font: { size: 12 } } },
+            tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtWon(ctx.raw)}` } },
+            datalabels: {
+                display: true,
+                anchor: 'end',
+                align: 'top', // 💡 세로 막대이므로 숫자를 막대 위쪽(top)으로 배치
+                formatter: v => v > 0 ? fmtWon(v) : '',
+                font: { size: 10, weight: 'bold' },
+                color: '#475569'
+            }
+        },
+        scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+            y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 }, callback: v => fmtWon(v) } }
+        }
+    }
+});
+
+// ── 2. 신제품 데이터 생성 로직 (가로형 유지) ──
+const getBaseSales = (name) => {
+    const idx = P_LABELS.indexOf(name);
+    return idx !== -1 ? P_DATA[idx] : 5000000; 
+};
+
+// 식사류 신제품
+const mealLabels = ['매콤 삼겹 덮밥', '불고기 치즈 도리아', '해물 볶음 우동'];
+const mealBaseData = [getBaseSales('삼겹살 구이'), getBaseSales('소불고기 덮밥'), getBaseSales('새우볶음밥')];
+const mealPredData = [mealBaseData[0] * 1.25, mealBaseData[1] * 1.15, mealBaseData[2] * 1.20]; 
+
+// 스낵류 신제품
+const snackLabels = ['치즈 핫도그', '갈릭 감자튀김', '매콤 오징어 가라아게'];
+const snackBaseData = [getBaseSales('핫도그'), getBaseSales('감자튀김'), getBaseSales('오징어링')];
+const snackPredData = [snackBaseData[0] * 1.80, snackBaseData[1] * 1.35, snackBaseData[2] * 1.40]; 
+
+const getNewProductChartOptions = () => ({
+    indexAxis: 'y', // 신제품 차트는 계속 가로형 유지
+    responsive: true,
+    maintainAspectRatio: false,
+    layout: { padding: { right: 60 } },
+    plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmtWon(ctx.raw)}` } },
+        datalabels: {
+            display: true,
+            anchor: 'end',
+            align: 'end', // 가로형이므로 끝(end) 정렬
+            formatter: v => fmtWon(v),
+            font: { size: 10, weight: 'bold' },
+            color: '#2c3e50'
+        }
+    },
+    scales: {
+        x: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 }, callback: v => fmtWon(v) }, suggestedMax: Math.max(...mealPredData, ...snackPredData) * 1.2 },
+        y: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' } } }
+    }
+});
+
+// 식사류 신제품 차트
+new Chart(document.getElementById('mealNewChart').getContext('2d'), {
     type: 'bar',
     data: {
-        labels: MONTHS,
-        datasets: [{
-            label: '2026 예측 매출',
-            data: SHORT_TERM_DATA,
-            backgroundColor: 'rgba(52, 152, 219, 0.4)',
-            borderColor: '#3498db',
-            borderWidth: 1,
-            borderRadius: 4,
-        }]
+        labels: mealLabels,
+        datasets: [
+            { label: '신제품 예상 매출', data: mealPredData, backgroundColor: '#e67e22', borderRadius: 4 },
+            { label: '기존 베이스 상품', data: mealBaseData, backgroundColor: '#bdc3c7', borderRadius: 4 }
+        ]
     },
-    options: {
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
-            }
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { font: { size: 11 } }
-            },
-            y: {
-                grid: { color: 'rgba(0,0,0,0.04)' },
-                ticks: {
-                    font: { size: 11 },
-                    callback: v => fmtWon(v)
-                }
-            }
-        }
-    }
+    options: getNewProductChartOptions()
 });
 
-// ── [추가] 장기 예측 차트 (Line) ──
-const longCtx = document.getElementById('longTermChart').getContext('2d');
-new Chart(longCtx, {
-    type: 'line',
+// 스낵류 신제품 차트
+new Chart(document.getElementById('snackNewChart').getContext('2d'), {
+    type: 'bar',
     data: {
-        labels: MONTHS,
-        datasets: [{
-            label: '2026 장기 추세',
-            data: LONG_TERM_DATA,
-            borderColor: '#e67e22',
-            backgroundColor: 'rgba(230, 126, 34, 0.05)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 3,
-        }]
+        labels: snackLabels,
+        datasets: [
+            { label: '신제품 예상 매출', data: snackPredData, backgroundColor: '#9b59b6', borderRadius: 4 },
+            { label: '기존 베이스 상품', data: snackBaseData, backgroundColor: '#bdc3c7', borderRadius: 4 }
+        ]
     },
-    options: {
-        plugins: {
-            legend: { display: false },
-            tooltip: {
-                callbacks: { label: ctx => ` ${fmtWon(ctx.raw)}` }
-            }
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { font: { size: 11 } }
-            },
-            y: {
-                grid: { color: 'rgba(0,0,0,0.04)' },
-                ticks: {
-                    font: { size: 11 },
-                    callback: v => fmtWon(v)
-                }
-            }
-        }
-    }
+    options: getNewProductChartOptions()
 });
 </script>
 {% endblock %}

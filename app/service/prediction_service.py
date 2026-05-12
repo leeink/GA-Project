@@ -1,84 +1,58 @@
+import numpy as np
+from sklearn.ensemble import RandomForestRegressor
 from sqlalchemy.ext.asyncio import AsyncSession
 from service.sales_record_service_detail import find_monthly_sales, find_yearly_total, find_available_years
 
 class PredictionService:
     
     @staticmethod
-    async def predict_short_term(db: AsyncSession, base_year: int):
-        """[왼쪽 차트] 선택한 연도 실적 패턴을 기준으로 2026년 단기 예측"""
-        try:
-            sales_base = await find_monthly_sales(db, str(base_year))
-            sales_2026 = await find_monthly_sales(db, "2026")
-            
-            map_base = {int(m): int(s) for m, s in sales_base}
-            map_2026 = {int(m): int(s) for m, s in sales_2026}
-            
-            # 1~4월 실적만 비교해서 성장률 계산
-            common_months = [m for m in range(1, 5) if m in map_base and m in map_2026]
-            
-            if not common_months:
-                growth_rate = 1.0
-            else:
-                total_base = sum(map_base[m] for m in common_months)
-                total_2026 = sum(map_2026[m] for m in common_months)
-                growth_rate = total_2026 / total_base if total_base > 0 else 1.0
-
-            predictions = []
-            for month in range(1, 13):
-                # 💡 [단기 예측 핵심] 5월부터는 DB에 0이 있든 없든 무조건 예측값 덮어씌움!
-                if month <= 4:
-                    val = map_2026.get(month, 0)
-                else:
-                    val = int(map_base.get(month, 0) * growth_rate)
-                
-                predictions.append({"month": month, "sales": val})
-                
-            return predictions
-        except Exception as e:
-            print(f"Short-term Prediction Error: {e}")
-            return [{"month": m, "sales": 0} for m in range(1, 13)]
-
-    @staticmethod
-    async def predict_long_term(db: AsyncSession, base_year: int):
-        """[오른쪽 차트] 무조건 2015~2025년 고정 추세를 바탕으로 2026년 장기 예측"""
+    async def predict_ml_sklearn(db: AsyncSession):
+        """사이킷런 랜덤포레스트로 2026년 12개월 매출 예측 (이중 막대 차트용)"""
         try:
             years = await find_available_years(db)
-            # 💡 [장기 예측 핵심] 드롭박스 선택값(base_year) 무시, 무조건 2015~2025년만 사용!
+            # 2015년부터 2025년까지의 데이터만 학습에 사용
             past_years = [int(y) for y in years if 2015 <= int(y) <= 2025]
             
-            if len(past_years) < 2:
-                return [{"month": m, "sales": 0} for m in range(1, 13)]
+            X_train = []
+            y_train = []
+            
+            # DB에서 과거 데이터 수집 (안전하게 row 인덱스로 접근)
+            for y in past_years:
+                sales = await find_monthly_sales(db, str(y))
+                for row in sales:
+                    month = int(row[0])
+                    val = int(row[1])
+                    X_train.append([y, month])  # 특성: [연도, 월]
+                    y_train.append(val)         # 정답: 매출액
+                    
+            if not X_train:
+                return [0] * 12
 
-            first_val = await find_yearly_total(db, str(min(past_years)))
-            last_val = await find_yearly_total(db, "2025") # 마지막 연도 무조건 2025년 고정
-            
-            first_year_sales = int(first_val) if first_val else 0
-            last_year_sales = int(last_val) if last_val else 0
-            
-            n = 2025 - min(past_years)
-            if first_year_sales > 0 and n > 0:
-                cagr = (last_year_sales / first_year_sales) ** (1 / n)
-            else:
-                cagr = 1.0
+            # 머신러닝 학습 (Random Forest)
+            model = RandomForestRegressor(n_estimators=100, random_state=42)
+            model.fit(X_train, y_train)
 
-            # 2026년 예측 총액 (2025년 기준 1년치 성장)
-            predicted_total_2026 = last_year_sales * cagr
+            # 2026년 예측 데이터 생성
+            X_2026 = [[2026, m] for m in range(1, 13)]
+            predictions = model.predict(X_2026)
+
+            # 현실 반영: 2026년 1~4월은 실제 데이터로 덮어쓰기
+            sales_2026 = await find_monthly_sales(db, "2026")
+            map_2026 = {int(row[0]): int(row[1]) for row in sales_2026 if row[0] is not None}
             
-            # 2025년 월별 비중으로 쪼개기
-            sales_2025 = await find_monthly_sales(db, "2025")
-            map_2025 = {int(m): int(s) for m, s in sales_2025}
-            total_2025 = sum(map_2025.values())
-            
-            long_term_predictions = []
-            for month in range(1, 13):
-                m_sales = map_2025.get(month, 0)
-                weight = m_sales / total_2025 if total_2025 > 0 else 1/12
-                long_term_predictions.append({
-                    "month": month,
-                    "sales": int(predicted_total_2026 * weight)
-                })
+            results = []
+            for i, month in enumerate(range(1, 13)):
+                # 1~4월 중에 실제 실적이 있으면 그걸 사용
+                if month <= 4 and month in map_2026:
+                    final_val = map_2026[month]
+                else:
+                    # 5월부터는 머신러닝 예측값 사용
+                    final_val = int(predictions[i])
+                results.append(final_val)
                 
-            return long_term_predictions
+            # HTML 템플릿 차트에서 바로 쓸 수 있도록 1차원 리스트 반환
+            return results
+        
         except Exception as e:
-            print(f"Long-term Prediction Error: {e}")
-            return [{"month": m, "sales": 0} for m in range(1, 13)]
+            print(f"ML Prediction Error: {e}")
+            return [0] * 12
