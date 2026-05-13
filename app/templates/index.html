@@ -13,14 +13,25 @@
         --danger: #ef4444;
     }
 
-    /* --- 장바구니 테이블 스타일 (image_73053a.png 스타일) --- */
+    /* 💡 기존 만두 사진 완벽 제거 */
+    .hero {
+        background-image: none !important;
+        background: var(--bg-light) !important;
+    }
+    .hero::before, .hero::after {
+        display: none !important;
+        background-image: none !important;
+        content: none !important;
+    }
+
+    /* --- 장바구니 테이블 스타일 --- */
     .cart-table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; border-top: 2px solid var(--secondary); margin-bottom: 20px; }
     .cart-table th { background: #f8fafc; padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: #475569; }
     .cart-table td { padding: 15px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
     .cart-img { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
     .cart-info-name { text-align: left; font-weight: bold; color: var(--secondary); padding-left: 10px; }
 
-    /* 장바구니 하단 합계 영역 */
+    /* 합계 영역 */
     .cart-total-box { 
         display: grid; grid-template-columns: repeat(3, 1fr); 
         background: #f1f5f9; padding: 30px; 
@@ -33,7 +44,7 @@
     /* 플로팅 & 네비 뱃지 */
     .nav-cart-wrapper { display: flex; align-items: center; margin-left: 20px; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.2); }
     .floating-cart { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; font-size: 24px; transition: 0.2s; }
-    .badge-count { position: absolute; top: -5px; right: -8px; background: var(--danger); color: white; font-size: 11px; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none; }
+    .badge-count { position: absolute; top: -5px; right: -8px; background: var(--danger); color: white; font-size: 11px; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none; border: 2px solid white; }
 
     /* 탭 스타일 */
     .shop-tabs { display: flex; justify-content: center; gap: 20px; margin: 30px 0; border-bottom: 2px solid var(--border); }
@@ -43,9 +54,100 @@
     /* 수량 조절 버튼 */
     .qty-btn { width: 28px; height: 28px; border: 1px solid var(--border); background: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
     .qty-input { width: 45px; height: 28px; text-align: center; border: 1px solid var(--border); border-radius: 4px; margin: 0 2px; }
+
+    /* 메인 히어로 이미지 사이즈 대폭 확대 (650px) */
+    #hero-slider-img {
+        transition: opacity 0.5s ease-in-out;
+        width: 100%;
+        max-width: 650px; 
+        aspect-ratio: 16 / 9; 
+        object-fit: cover; 
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    /* 💡 신메뉴 팝업 스타일 (방해되지 않게 좌측 하단으로 이동!) */
+    .promo-popup {
+        position: fixed; 
+        bottom: 30px; /* 화면 아래에서 띄움 */
+        left: 30px;   /* 화면 왼쪽에서 띄움 */
+        width: 380px; 
+        max-width: 90%; 
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        display: none; /* JS에서 flex로 켬 */
+        flex-direction: column; 
+        overflow: hidden;
+        z-index: 9999;
+        border-radius: 8px;
+    }
+    .promo-popup img {
+        width: 100%; height: auto; display: block;
+    }
+    .promo-popup-footer {
+        display: flex; justify-content: space-between; align-items: center;
+        background: #f8fafc; padding: 12px 15px; border-top: 1px solid #e2e8f0;
+        font-size: 13px; color: #475569;
+    }
+    .promo-popup-footer label {
+        display: flex; align-items: center; gap: 5px; cursor: pointer;
+    }
+    .promo-popup-footer button {
+        background: none; border: none; font-weight: 800; color: #0f172a;
+        cursor: pointer; font-size: 13px; padding: 5px;
+    }
+    .promo-popup-footer button:hover { color: var(--danger); }
+
+    /* 💡 하단 푸터(Footer) 스타일 추가 */
+    .site-footer {
+        background-color: var(--secondary); /* 상단바 색상과 통일 */
+        color: #94a3b8;
+        padding: 50px 20px;
+        margin-top: 60px;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    .footer-content {
+        max-width: 1100px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .footer-content strong {
+        color: #f8fafc;
+        font-size: 18px;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .footer-info {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+    .footer-info span {
+        position: relative;
+    }
+    .footer-info span:not(:last-child)::after {
+        content: '|';
+        position: absolute;
+        right: -12px;
+        color: #475569;
+    }
 </style>
 
-<!-- 플로팅 버튼 -->
+<div id="promoPopup" class="promo-popup">
+    <!-- 팝업 이미지 -->
+    <img src="/static/images/products/newmenu.png" alt="신메뉴 출시 팝업 안내">
+    <!-- 하단 컨트롤 영역 -->
+    <div class="promo-popup-footer">
+        <label>
+            <input type="checkbox" id="hidePopupCheckbox"> 하루 동안 이 창을 열지 않습니다.
+        </label>
+        <button onclick="closePromoPopup()">[닫기]</button>
+    </div>
+</div>
+
 <div class="floating-cart" onclick="switchView('cart')">
     🛒<span id="float-badge" class="badge-count">0</span>
 </div>
@@ -55,28 +157,28 @@
         <span class="brand-mark">F</span>
         <span>글로벌프레시</span>
     </a>
-    <nav class="nav">
+    <nav class="nav" style="display: flex; align-items: center; gap: 15px;">
         {% if current_user %}
-            <span class="user-greeting" style="color:white;"><b>{{ current_user.username }}</b>님</span>
+            <span class="user-greeting" style="color:white;">
+                <b>{{ current_user.username or current_user.name or current_user.nickname or '고객' }}</b>님
+            </span>
             <a href="/auth/mypage">마이페이지</a>
-            <form action="/auth/logout/form" method="post" style="display:inline;">
-                <button class="nav-link" type="submit">로그아웃</button>
+            <form action="/auth/logout/form" method="post" style="display:inline; margin:0;">
+                <button class="nav-link" type="submit" style="background:none; border:none; color:white; cursor:pointer;">로그아웃</button>
             </form>
         {% else %}
             <a href="/auth/login">로그인</a>
-            <a href="/auth/register" class="btn btn-primary" style="color:white;">회원가입</a>
+            <a href="/auth/register" class="btn btn-primary" style="color:white; padding: 8px 16px;">회원가입</a>
         {% endif %}
-        <div class="nav-cart-wrapper">
-            <button onclick="switchView('cart')" style="background:none; border:none; color:white; font-weight:800; cursor:pointer; position:relative;">
-                장바구니/주문 <span id="nav-badge" class="badge-count">0</span>
-            </button>
-        </div>
+        
+        <button class="nav-cart-btn" onclick="switchView('cart')" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.3); color: white; padding: 8px 16px; border-radius: 20px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; position: relative;">
+            장바구니 <span id="nav-badge" class="badge-count">0</span>
+        </button>
     </nav>
 </header>
 
-<!-- [복구] 상단 홍보 문구 섹션 (Hero) -->
-<section id="hero-section" class="hero">
-    <div class="hero-copy">
+<section id="hero-section" class="hero" style="display: flex; align-items: center; justify-content: space-between; padding: 60px 40px; background: var(--bg-light) !important; background-image: none !important;">
+    <div class="hero-copy" style="flex: 1;">
         <span class="eyebrow">오늘 주문, 내일 차갑게 도착</span>
         <h1>식사, 간식을 든든하게 채우는 한 끼</h1>
         <p>식사부터 반찬, 안주, 아이들 간식까지. 신선함을 급속 냉동으로 가둔 베스트 상품을 만나보세요.</p>
@@ -85,6 +187,9 @@
             <div class="stat"><strong>3만원</strong><span>이상 무료배송</span></div>
             <div class="stat"><strong>24시간</strong><span>신선 보장 접수</span></div>
         </div>
+    </div>
+    <div style="flex: 1.3; display: flex; justify-content: flex-end; align-items: center; z-index: 10; padding-left: 20px;">
+        <img id="hero-slider-img" src="/static/images/products/main1.png" alt="대표 상품 이미지">
     </div>
 </section>
 
@@ -101,9 +206,9 @@
     </section>
 
     <section id="order-section" hidden>
-        <div class="shop-layout" style="display:block; max-width:1100px; margin:0 auto;">
+        <div class="shop-layout" style="display:block; max-width:1100px; margin:0 auto; padding-top: 20px;">
             <div class="order-summary" style="margin-bottom:50px;">
-                <h3 style="margin-bottom:20px;">🛒 장바구니 담긴 상품</h3>
+                <h3 style="margin-bottom:20px; font-size: 24px;">🛒 내 장바구니</h3>
                 <table class="cart-table">
                     <thead>
                         <tr>
@@ -120,35 +225,45 @@
                 </table>
 
                 <div class="cart-total-box">
-                    <div class="total-item">
-                        <span>총 상품금액</span>
-                        <strong id="sum-product-price">0원</strong>
-                    </div>
-                    <div class="total-item">
-                        <span>배송비 (3만 원 이상 무료)</span>
-                        <strong id="sum-delivery-fee">+0원</strong>
-                    </div>
-                    <div class="total-item">
-                        <span>최종 결제 예정금액</span>
-                        <strong id="sum-total-price" style="color:var(--danger);">0원</strong>
-                    </div>
+                    <div class="total-item"><span>총 상품금액</span><strong id="sum-product-price">0원</strong></div>
+                    <div class="total-item"><span>배송비 (3만 원 이상 무료)</span><strong id="sum-delivery-fee">+0원</strong></div>
+                    <div class="total-item"><span>최종 결제 예정금액</span><strong id="sum-total-price" style="color:var(--danger);">0원</strong></div>
                 </div>
             </div>
 
             <form class="order-form" id="order-final-form" style="background:#fff; padding:40px; border:1px solid var(--border); border-radius:12px;">
                 <h3 style="border-bottom:2px solid var(--secondary); padding-bottom:15px; margin-bottom:25px;">🚚 배송지 정보</h3>
+                
                 <div class="field" style="margin-bottom:20px;">
                     <label style="display:block; font-weight:bold; margin-bottom:8px;">받는 분 성함</label>
-                    <input type="text" id="receiver-name" placeholder="성함을 입력해 주세요" required style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                    <input type="text" id="receiver-name" 
+                           value="{% if current_user %}{{ current_user.username or current_user.name or current_user.nickname or '' }}{% endif %}" 
+                           placeholder="성함을 입력해 주세요" required 
+                           style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
                 </div>
+                
                 <div class="field" style="margin-bottom:20px;">
                     <label style="display:block; font-weight:bold; margin-bottom:8px;">배송 주소</label>
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
-                        <input type="text" id="post-code-field" readonly placeholder="우편번호" style="width:150px; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                        <input type="text" id="post-code-field" readonly 
+                               value="{% if current_user %}{{ current_user.zipcode or current_user.postcode or current_user.zip_code or '' }}{% endif %}" 
+                               placeholder="우편번호" 
+                               style="width:150px; padding:12px; border:1px solid var(--border); border-radius:6px;">
                         <button type="button" class="btn btn-ghost" onclick="openDaumPost()">주소 찾기</button>
                     </div>
-                    <input type="text" id="addr-base-field" readonly placeholder="기본 주소" required style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                    <input type="text" id="addr-base-field" readonly 
+                           value="{% if current_user %}{{ current_user.address or current_user.base_address or '' }}{% endif %}" 
+                           placeholder="기본 주소" required 
+                           style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
                 </div>
+                
+                <div class="field" style="margin-bottom:20px;">
+                    <input type="text" id="addr-detail-field" 
+                           value="{% if current_user %}{{ current_user.detail_address or current_user.address_detail or '' }}{% endif %}" 
+                           placeholder="상세 주소를 입력해 주세요 (예: 101동 202호)" required 
+                           style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                </div>
+
                 <button type="submit" class="btn btn-primary" style="width:100%; height:65px; font-size:20px; font-weight:bold;">주문 결제하기</button>
             </form>
         </div>
@@ -161,8 +276,74 @@
     </section>
 </main>
 
+<!-- 💡 맨 밑에 쇼핑몰 느낌 뿜뿜하는 정보 푸터(Footer) 추가! -->
+<footer class="site-footer">
+    <div class="footer-content">
+        <strong>(주)글로벌프레시존</strong>
+        <div class="footer-info">
+            <span>대표자: 김대표</span>
+            <span>사업자등록번호: 123-45-67890</span>
+            <span>통신판매업신고: 2026-경기화성-0123</span>
+        </div>
+        <div class="footer-info">
+            <span>주소: 경기도 화성시 글로벌로 123, 프레시빌딩 5층</span>
+            <span>이메일: help@globalfresh.com</span>
+            <span>고객센터: 1588-0000</span>
+        </div>
+        <div class="footer-info">
+            <span>운영시간: 평일 09:00 ~ 18:00 (점심시간 12:00 ~ 13:00 / 주말 및 공휴일 휴무)</span>
+        </div>
+        <p style="margin-top: 15px; color: #475569; font-size: 12px;">Copyright © GLOBAL FRESH ZONE. All rights reserved.</p>
+    </div>
+</footer>
+
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
+    // 💡 팝업 체크 로직
+    function checkPromoPopup() {
+        const popup = document.getElementById('promoPopup');
+        const hideUntil = localStorage.getItem('hideNewMenuPopup');
+        const now = new Date().getTime();
+
+        // 저장된 시간이 없거나, 저장된 시간(24시간 후)이 현재 시간보다 작으면 팝업 띄움
+        if (!hideUntil || now > parseInt(hideUntil)) {
+            popup.style.display = 'flex';
+        }
+    }
+
+    function closePromoPopup() {
+        const popup = document.getElementById('promoPopup');
+        const checkbox = document.getElementById('hidePopupCheckbox');
+
+        // 체크박스에 체크했다면 현재 시간에서 +24시간을 localStorage에 저장
+        if (checkbox.checked) {
+            const now = new Date();
+            now.setDate(now.getDate() + 1); // 하루(1일) 더하기
+            localStorage.setItem('hideNewMenuPopup', now.getTime());
+        }
+        
+        popup.style.display = 'none';
+    }
+
+    // 💡 5초 슬라이더 유지
+    const heroImages = ["/static/images/products/main1.png", "/static/images/products/main2.png"];
+    let heroImageIndex = 0;
+    
+    setInterval(() => {
+        const slider = document.getElementById('hero-slider-img');
+        if (slider) {
+            slider.style.opacity = 0; 
+            setTimeout(() => {
+                heroImageIndex = (heroImageIndex + 1) % heroImages.length;
+                slider.src = heroImages[heroImageIndex];
+                slider.style.opacity = 1; 
+            }, 500); 
+        }
+    }, 5000); 
+
+    const IS_LOGGED_IN = {{ 'true' if current_user else 'false' }};
+    
+    // 💡 상품 데이터에 중량(weight) 추가 매핑
     const products = [
         {% for p in products %}
         {
@@ -170,6 +351,19 @@
             name: {{ p.name|tojson }},
             price: {{ p.cost }},
             stock: {{ p.total_avail_qty or 0 }},
+            weight: (n => {
+                if (n.includes('삼겹살')) return "500g";
+                if (n.includes('불고기')) return "300g";
+                if (n.includes('새우볶음밥')) return "200g";
+                if (n.includes('치즈볼')) return "1kg";
+                if (n.includes('도리아')) return "300g";
+                if (n.includes('낙지')) return "300g";
+                if (n.includes('모짜렐라')) return "700g";
+                if (n.includes('감자튀김')) return "500g";
+                if (n.includes('오징어')) return "200g";
+                if (n.includes('핫도그')) return "500g";
+                return "300g";
+            })({{ p.name|tojson }}),
             img: (n => {
                 if (n.includes('삼겹살')) return "/static/images/products/pork-belly.png";
                 if (n.includes('불고기')) return "/static/images/products/bulgogi-rice.png";
@@ -190,7 +384,10 @@
     const cart = new Map();
     let currentDetailQty = 1;
 
-    window.onload = () => { renderProductGrid(); };
+    window.onload = () => { 
+        renderProductGrid(); 
+        checkPromoPopup(); // 💡 팝업 체크 함수 실행
+    };
 
     function switchView(mode) {
         const prodSec = document.getElementById('product-section');
@@ -198,14 +395,12 @@
         const heroSec = document.getElementById('hero-section');
         
         if (mode === 'cart') {
-            prodSec.hidden = true;
-            ordSec.hidden = false;
-            if(heroSec) heroSec.style.display = 'none'; // 장바구니일 때 홍보문구 숨김(선택사항)
-            updateCartUI();
+            prodSec.hidden = true; ordSec.hidden = false;
+            if(heroSec) heroSec.style.display = 'none';
+            updateCartUI(); window.scrollTo(0, 0);
         } else {
-            prodSec.hidden = false;
-            ordSec.hidden = true;
-            if(heroSec) heroSec.style.display = 'block';
+            prodSec.hidden = false; ordSec.hidden = true;
+            if(heroSec) heroSec.style.display = 'flex';
             document.getElementById('product-main-grid').hidden = false;
             document.getElementById('product-detail-view').hidden = true;
             ['all', 'sale', 'new'].forEach(m => {
@@ -220,7 +415,7 @@
             <article class="product" onclick="showDetail('${p.id}')">
                 <div class="product-media"><img src="${p.img}" class="product-photo"></div>
                 <div class="product-body">
-                    <h3>${p.name}</h3>
+                    <h3>${p.name} <span style="font-size:13px; color:#94a3b8; font-weight:normal;">(${p.weight})</span></h3>
                     <p>${p.price.toLocaleString()}원</p>
                     <div class="product-bottom"><button class="view-product">상세보기</button></div>
                 </div>
@@ -237,29 +432,35 @@
         
         detail.innerHTML = `
             <div class="product-detail" style="display:flex; gap:40px; padding:40px; background:#fff; border-radius:12px;">
-                <div style="flex:1;"><img src="${p.img}" style="width:100%; border-radius:12px;"></div>
+                <div style="flex:1;"><img src="${p.img}" style="width:100%; border-radius:12px; border:1px solid #eee;"></div>
                 <div style="flex:1;">
                     <button class="btn btn-ghost" onclick="closeDetail()">← 뒤로가기</button>
-                    <h2 style="margin:20px 0;">${p.name}</h2>
-                    <p style="font-size:24px; color:var(--primary); font-weight:800;">${p.price.toLocaleString()}원</p>
-                    <div class="qty-section" style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
-                        <strong>수량</strong>
-                        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                    <h2 style="margin:20px 0;">${p.name} <span style="font-size:20px; color:#94a3b8; font-weight:normal;">(${p.weight})</span></h2>
+                    <p style="font-size:28px; color:var(--primary); font-weight:800; margin-bottom:20px;">${p.price.toLocaleString()}원</p>
+                    <div class="qty-section">
+                        <strong style="display:block; margin-bottom:10px;">상품담기</strong>
+                        <div style="display:flex; align-items:center; gap:10px;">
                             <button class="qty-btn" onclick="updateQtyBtn(-1, ${p.stock})">-</button>
                             <input type="number" id="detail-qty-input" class="qty-input" value="1" onchange="validateQtyInput(this, ${p.stock})">
                             <button class="qty-btn" onclick="updateQtyBtn(1, ${p.stock})">+</button>
+                            <span style="font-size:12px; color:#94a3b8; margin-left:5px;">재고: ${p.stock}개</span>
                         </div>
                     </div>
-                    <button class="btn btn-primary" onclick="handleCartAction('${p.id}', 'add')" style="width:100%; padding:15px; margin-bottom:10px;">장바구니 담기</button>
-                    <button class="btn btn-ghost" onclick="handleCartAction('${p.id}', 'direct')" style="width:100%; padding:15px;">바로 구매하기</button>
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+                        <button class="btn btn-ghost" onclick="handleCartAction('${p.id}', 'add')" style="padding:15px; font-weight:bold; border:1px solid var(--border); background:white;">장바구니 담기</button>
+                        <button class="btn btn-ghost" onclick="switchView('cart')" style="padding:15px; font-weight:bold; border:1px solid var(--border); background:white;">장바구니 가기</button>
+                        <button class="btn btn-primary" onclick="handleCartAction('${p.id}', 'direct')" style="grid-column:span 2; padding:18px; font-weight:bold; font-size:16px;">바로 구매하기</button>
+                    </div>
                 </div>
             </div>
         `;
+        detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function closeDetail() {
         document.getElementById('product-main-grid').hidden = false;
         document.getElementById('product-detail-view').hidden = true;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function updateQtyBtn(delta, stock) {
@@ -272,16 +473,23 @@
         let val = parseInt(el.value);
         if (isNaN(val) || val < 1) val = 1;
         if (val > stock) val = stock;
-        el.value = val;
-        currentDetailQty = val;
+        el.value = val; currentDetailQty = val;
     }
 
     function handleCartAction(id, mode) {
+        if (!IS_LOGGED_IN && mode === 'direct') {
+            alert('로그인이 필요합니다.');
+            location.href = '/auth/login';
+            return;
+        }
+
         const p = products.find(x => x.id === id);
         const existing = cart.get(id) || { ...p, count: 0 };
         if (existing.count + currentDetailQty > p.stock) { alert('재고가 부족합니다.'); return; }
+        
         cart.set(id, { ...existing, count: existing.count + currentDetailQty });
         updateCartUI();
+        
         if (mode === 'direct') switchView('cart');
         else alert('장바구니에 담겼습니다.');
     }
@@ -297,14 +505,13 @@
 
         if (count === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="padding:50px; color:#94a3b8;">장바구니가 비어있습니다.</td></tr>';
-            renderSummary(0);
-            return;
+            renderSummary(0); return;
         }
 
         tbody.innerHTML = items.map(i => `
             <tr>
                 <td><img src="${i.img}" class="cart-img"></td>
-                <td class="cart-info-name">${i.name}</td>
+                <td class="cart-info-name">${i.name} <span style="font-size:12px; color:#94a3b8; font-weight:normal;">(${i.weight})</span></td>
                 <td>${i.price.toLocaleString()}원</td>
                 <td>
                     <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
@@ -315,7 +522,7 @@
                 </td>
                 <td>기본배송</td>
                 <td style="font-weight:bold;">${(i.price * i.count).toLocaleString()}원</td>
-                <td><button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer;">✕</button></td>
+                <td><button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer; font-size:18px;">✕</button></td>
             </tr>
         `).join('');
 
@@ -325,16 +532,13 @@
 
     function renderSummary(subtotal) {
         const deliveryFee = (subtotal >= 30000 || subtotal === 0) ? 0 : 3000;
-        const total = subtotal + deliveryFee;
-
         document.getElementById('sum-product-price').innerText = subtotal.toLocaleString() + '원';
         document.getElementById('sum-delivery-fee').innerText = (deliveryFee > 0 ? '+' : '') + deliveryFee.toLocaleString() + '원';
-        document.getElementById('sum-total-price').innerText = total.toLocaleString() + '원';
+        document.getElementById('sum-total-price').innerText = (subtotal + deliveryFee).toLocaleString() + '원';
     }
 
     function changeCartQty(id, delta) {
-        const item = cart.get(id);
-        const next = item.count + delta;
+        const item = cart.get(id); const next = item.count + delta;
         if (next >= 1 && next <= item.stock) { item.count = next; updateCartUI(); }
     }
 
@@ -342,8 +546,7 @@
         let next = parseInt(val);
         if (isNaN(next) || next < 1) next = 1;
         if (next > stock) next = stock;
-        cart.get(id).count = next;
-        updateCartUI();
+        cart.get(id).count = next; updateCartUI();
     }
 
     function openDaumPost() {
