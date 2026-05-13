@@ -137,9 +137,7 @@
 </style>
 
 <div id="promoPopup" class="promo-popup">
-    <!-- 팝업 이미지 -->
     <img src="/static/images/products/newmenu.png" alt="신메뉴 출시 팝업 안내">
-    <!-- 하단 컨트롤 영역 -->
     <div class="promo-popup-footer">
         <label>
             <input type="checkbox" id="hidePopupCheckbox"> 하루 동안 이 창을 열지 않습니다.
@@ -276,7 +274,6 @@
     </section>
 </main>
 
-<!-- 💡 맨 밑에 쇼핑몰 느낌 뿜뿜하는 정보 푸터(Footer) 추가! -->
 <footer class="site-footer">
     <div class="footer-content">
         <strong>(주)글로벌프레시존</strong>
@@ -299,13 +296,11 @@
 
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
-    // 💡 팝업 체크 로직
     function checkPromoPopup() {
         const popup = document.getElementById('promoPopup');
         const hideUntil = localStorage.getItem('hideNewMenuPopup');
         const now = new Date().getTime();
 
-        // 저장된 시간이 없거나, 저장된 시간(24시간 후)이 현재 시간보다 작으면 팝업 띄움
         if (!hideUntil || now > parseInt(hideUntil)) {
             popup.style.display = 'flex';
         }
@@ -315,17 +310,15 @@
         const popup = document.getElementById('promoPopup');
         const checkbox = document.getElementById('hidePopupCheckbox');
 
-        // 체크박스에 체크했다면 현재 시간에서 +24시간을 localStorage에 저장
         if (checkbox.checked) {
             const now = new Date();
-            now.setDate(now.getDate() + 1); // 하루(1일) 더하기
+            now.setDate(now.getDate() + 1);
             localStorage.setItem('hideNewMenuPopup', now.getTime());
         }
         
         popup.style.display = 'none';
     }
 
-    // 💡 5초 슬라이더 유지
     const heroImages = ["/static/images/products/main1.png", "/static/images/products/main2.png"];
     let heroImageIndex = 0;
     
@@ -343,7 +336,6 @@
 
     const IS_LOGGED_IN = {{ 'true' if current_user else 'false' }};
     
-    // 💡 상품 데이터에 중량(weight) 추가 매핑
     const products = [
         {% for p in products %}
         {
@@ -384,28 +376,92 @@
     const cart = new Map();
     let currentDetailQty = 1;
 
-    window.onload = () => { 
+    window.onload = async () => { 
         renderProductGrid(); 
-        checkPromoPopup(); // 💡 팝업 체크 함수 실행
+        checkPromoPopup();
+
+        if (IS_LOGGED_IN) {
+            await loadCartFromDB();
+        } else {
+            updateCartUI();
+        }
     };
 
-    function switchView(mode) {
+    function getProductById(productId) {
+        return products.find(p => p.id === String(productId));
+    }
+
+    function applyCartItems(items) {
+        cart.clear();
+
+        items.forEach(item => {
+            const p = getProductById(item.product_id);
+
+            cart.set(String(item.id), {
+                id: String(item.id),
+                product_id: String(item.product_id),
+                name: item.product_name,
+                price: item.product_price,
+                stock: item.stock ?? (p ? p.stock : 0),
+                count: item.cart_quantity,
+                weight: p ? p.weight : "300g",
+                img: p ? p.img : "/static/images/products/default.png",
+            });
+        });
+
+        updateCartUI();
+    }
+
+    async function loadCartFromDB() {
+        const res = await fetch('/api/cart/', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        if (res.status === 401) {
+            cart.clear();
+            updateCartUI();
+            return;
+        }
+
+        if (!res.ok) {
+            alert('장바구니를 불러오지 못했습니다.');
+            return;
+        }
+
+        const items = await res.json();
+        applyCartItems(items);
+    }
+
+    async function switchView(mode) {
         const prodSec = document.getElementById('product-section');
         const ordSec = document.getElementById('order-section');
         const heroSec = document.getElementById('hero-section');
         
         if (mode === 'cart') {
-            prodSec.hidden = true; ordSec.hidden = false;
-            if(heroSec) heroSec.style.display = 'none';
-            updateCartUI(); window.scrollTo(0, 0);
+            if (!IS_LOGGED_IN) {
+                alert('로그인이 필요합니다.');
+                location.href = '/auth/login';
+                return;
+            }
+
+            prodSec.hidden = true;
+            ordSec.hidden = false;
+            if (heroSec) heroSec.style.display = 'none';
+
+            await loadCartFromDB();
+            window.scrollTo(0, 0);
         } else {
-            prodSec.hidden = false; ordSec.hidden = true;
-            if(heroSec) heroSec.style.display = 'flex';
+            prodSec.hidden = false;
+            ordSec.hidden = true;
+            if (heroSec) heroSec.style.display = 'flex';
+
             document.getElementById('product-main-grid').hidden = false;
             document.getElementById('product-detail-view').hidden = true;
+
             ['all', 'sale', 'new'].forEach(m => {
                 const btn = document.getElementById(`tab-${m}`);
-                if(btn) btn.classList.toggle('active', m === mode);
+                if (btn) btn.classList.toggle('active', m === mode);
             });
         }
     }
@@ -426,6 +482,7 @@
     function showDetail(id) {
         const p = products.find(x => x.id === id);
         currentDetailQty = 1;
+
         const detail = document.getElementById('product-detail-view');
         document.getElementById('product-main-grid').hidden = true;
         detail.hidden = false;
@@ -454,6 +511,7 @@
                 </div>
             </div>
         `;
+
         detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -466,46 +524,82 @@
     function updateQtyBtn(delta, stock) {
         const input = document.getElementById('detail-qty-input');
         let next = parseInt(input.value) + delta;
-        if (next >= 1 && next <= stock) { input.value = next; currentDetailQty = next; }
+
+        if (next >= 1 && next <= stock) {
+            input.value = next;
+            currentDetailQty = next;
+        }
     }
 
     function validateQtyInput(el, stock) {
         let val = parseInt(el.value);
+
         if (isNaN(val) || val < 1) val = 1;
         if (val > stock) val = stock;
-        el.value = val; currentDetailQty = val;
+
+        el.value = val;
+        currentDetailQty = val;
     }
 
-    function handleCartAction(id, mode) {
-        if (!IS_LOGGED_IN && mode === 'direct') {
+    async function handleCartAction(id, mode) {
+        if (!IS_LOGGED_IN) {
             alert('로그인이 필요합니다.');
             location.href = '/auth/login';
             return;
         }
 
         const p = products.find(x => x.id === id);
-        const existing = cart.get(id) || { ...p, count: 0 };
-        if (existing.count + currentDetailQty > p.stock) { alert('재고가 부족합니다.'); return; }
+        if (!p) return;
+
+        if (currentDetailQty > p.stock) {
+            alert('재고가 부족합니다.');
+            return;
+        }
+
+        const res = await fetch('/api/cart/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                product_id: id,
+                quantity: currentDetailQty,
+            }),
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => null);
+            alert(error?.detail || '장바구니 담기에 실패했습니다.');
+            return;
+        }
+
+        const items = await res.json();
+        applyCartItems(items);
         
-        cart.set(id, { ...existing, count: existing.count + currentDetailQty });
-        updateCartUI();
-        
-        if (mode === 'direct') switchView('cart');
-        else alert('장바구니에 담겼습니다.');
+        if (mode === 'direct') {
+            await switchView('cart');
+        } else {
+            alert('장바구니에 담겼습니다.');
+        }
     }
 
     function updateCartUI() {
         const tbody = document.getElementById('cart-table-body');
         const items = [...cart.values()];
-        const count = items.length;
+        const count = items.reduce((sum, item) => sum + item.count, 0);
         
         [document.getElementById('nav-badge'), document.getElementById('float-badge')].forEach(b => {
-            if(b) { b.innerText = count; b.style.display = count > 0 ? 'block' : 'none'; }
+            if (b) {
+                b.innerText = count;
+                b.style.display = count > 0 ? 'block' : 'none';
+            }
         });
 
-        if (count === 0) {
+        if (items.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" style="padding:50px; color:#94a3b8;">장바구니가 비어있습니다.</td></tr>';
-            renderSummary(0); return;
+            renderSummary(0);
+            return;
         }
 
         tbody.innerHTML = items.map(i => `
@@ -516,13 +610,13 @@
                 <td>
                     <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
                         <button class="qty-btn" onclick="changeCartQty('${i.id}', -1)">-</button>
-                        <input type="number" class="qty-input" value="${i.count}" onchange="directCartQty('${i.id}', this.value, ${i.stock})">
+                        <input type="number" class="qty-input" value="${i.count}" onchange="directCartQty('${i.id}', this.value)">
                         <button class="qty-btn" onclick="changeCartQty('${i.id}', 1)">+</button>
                     </div>
                 </td>
                 <td>기본배송</td>
                 <td style="font-weight:bold;">${(i.price * i.count).toLocaleString()}원</td>
-                <td><button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer; font-size:18px;">✕</button></td>
+                <td><button onclick="deleteCartItem('${i.id}')" style="color:red; background:none; border:none; cursor:pointer; font-size:18px;">✕</button></td>
             </tr>
         `).join('');
 
@@ -532,22 +626,135 @@
 
     function renderSummary(subtotal) {
         const deliveryFee = (subtotal >= 30000 || subtotal === 0) ? 0 : 3000;
+
         document.getElementById('sum-product-price').innerText = subtotal.toLocaleString() + '원';
         document.getElementById('sum-delivery-fee').innerText = (deliveryFee > 0 ? '+' : '') + deliveryFee.toLocaleString() + '원';
         document.getElementById('sum-total-price').innerText = (subtotal + deliveryFee).toLocaleString() + '원';
     }
 
-    function changeCartQty(id, delta) {
-        const item = cart.get(id); const next = item.count + delta;
-        if (next >= 1 && next <= item.stock) { item.count = next; updateCartUI(); }
+    async function saveCartQuantity(cartId, quantity) {
+        const res = await fetch(`/api/cart/${cartId}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                quantity: quantity,
+            }),
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => null);
+            alert(error?.detail || '수량 변경에 실패했습니다.');
+            await loadCartFromDB();
+            return;
+        }
+
+        const items = await res.json();
+        applyCartItems(items);
     }
 
-    function directCartQty(id, val, stock) {
-        let next = parseInt(val);
-        if (isNaN(next) || next < 1) next = 1;
-        if (next > stock) next = stock;
-        cart.get(id).count = next; updateCartUI();
+    async function changeCartQty(cartId, delta) {
+        const item = cart.get(String(cartId));
+        if (!item) return;
+
+        const next = item.count + delta;
+
+        if (next < 1) return;
+
+        if (next > item.stock) {
+            alert('재고가 부족합니다.');
+            return;
+        }
+
+        await saveCartQuantity(cartId, next);
     }
+
+    async function directCartQty(cartId, val) {
+        const item = cart.get(String(cartId));
+        if (!item) return;
+
+        let next = parseInt(val);
+
+        if (isNaN(next) || next < 1) next = 1;
+        if (next > item.stock) next = item.stock;
+
+        await saveCartQuantity(cartId, next);
+    }
+
+    async function deleteCartItem(cartId) {
+        const res = await fetch(`/api/cart/${cartId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+
+        if (!res.ok) {
+            alert('장바구니 삭제에 실패했습니다.');
+            return;
+        }
+
+        const items = await res.json();
+        applyCartItems(items);
+    }
+
+    document.getElementById('order-final-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        if (!IS_LOGGED_IN) {
+            alert('로그인이 필요합니다.');
+            location.href = '/auth/login';
+            return;
+        }
+
+        const items = [...cart.values()];
+        if (items.length === 0) {
+            alert('장바구니가 비어있습니다.');
+            return;
+        }
+
+        const baseAddress = document.getElementById('addr-base-field').value.trim();
+        const detailAddress = document.getElementById('addr-detail-field').value.trim();
+
+        if (!baseAddress || !detailAddress) {
+            alert('배송 주소를 입력해 주세요.');
+            return;
+        }
+
+        const orderItems = {};
+        items.forEach(item => {
+            orderItems[item.product_id] = item.count;
+        });
+
+        const res = await fetch('/product/order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+                item: orderItems,
+                address: `${baseAddress} ${detailAddress}`,
+            }),
+        });
+
+        if (!res.ok) {
+            const error = await res.json().catch(() => null);
+            alert(error?.detail || '주문 처리에 실패했습니다.');
+            return;
+        }
+
+        await fetch('/api/cart/', {
+            method: 'DELETE',
+            credentials: 'include',
+        });
+
+        cart.clear();
+        updateCartUI();
+
+        alert('주문이 완료되었습니다.');
+        location.href = '/product';
+    });
 
     function openDaumPost() {
         new daum.Postcode({
