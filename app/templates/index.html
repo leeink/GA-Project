@@ -4,85 +4,51 @@
 
 {% block content %}
 <style>
-    /* --- 글로벌 테마 및 레이아웃 --- */
     :root {
         --primary: #10b981;
         --primary-hover: #059669;
         --secondary: #0f172a;
         --bg-light: #f8fafc;
         --border: #e2e8f0;
+        --danger: #ef4444;
     }
 
-    /* 상단 사용자 정보 스타일 */
-    .user-greeting {
-        font-size: 14px;
-        margin-right: 15px;
-        color: var(--secondary);
-    }
-    .user-greeting b {
-        color: var(--primary);
-    }
+    /* --- 장바구니 테이블 스타일 (image_73053a.png 스타일) --- */
+    .cart-table { width: 100%; border-collapse: collapse; background: white; font-size: 14px; border-top: 2px solid var(--secondary); margin-bottom: 20px; }
+    .cart-table th { background: #f8fafc; padding: 12px; border-bottom: 1px solid var(--border); font-weight: 600; color: #475569; }
+    .cart-table td { padding: 15px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle; }
+    .cart-img { width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
+    .cart-info-name { text-align: left; font-weight: bold; color: var(--secondary); padding-left: 10px; }
 
-    /* 탭 메뉴 스타일 */
-    .shop-tabs {
-        display: flex;
-        justify-content: center;
-        gap: 20px;
-        margin: 30px 0;
-        border-bottom: 2px solid var(--border);
+    /* 장바구니 하단 합계 영역 */
+    .cart-total-box { 
+        display: grid; grid-template-columns: repeat(3, 1fr); 
+        background: #f1f5f9; padding: 30px; 
+        text-align: center; border-radius: 8px; border: 1px solid var(--border);
+        margin-top: 20px;
     }
-    .tab-btn {
-        padding: 15px 40px;
-        border: none;
-        background: none;
-        font-size: 18px;
-        font-weight: 800;
-        cursor: pointer;
-        color: #94a3b8;
-        transition: 0.3s;
-    }
-    .tab-btn.active {
-        color: var(--primary);
-        border-bottom: 4px solid var(--primary);
-    }
+    .total-item span { display: block; font-size: 15px; color: #64748b; margin-bottom: 10px; }
+    .total-item strong { font-size: 22px; color: var(--secondary); }
 
-    /* 상세 페이지 버튼 및 레이아웃 */
-    .detail-actions {
-        display: flex;
-        gap: 12px;
-        margin-top: 30px;
-    }
-    .btn-large {
-        flex: 1;
-        padding: 18px;
-        font-size: 16px;
-        font-weight: bold;
-        border-radius: 12px;
-        cursor: pointer;
-    }
+    /* 플로팅 & 네비 뱃지 */
+    .nav-cart-wrapper { display: flex; align-items: center; margin-left: 20px; padding-left: 20px; border-left: 1px solid rgba(255,255,255,0.2); }
+    .floating-cart { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--primary); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; font-size: 24px; transition: 0.2s; }
+    .badge-count { position: absolute; top: -5px; right: -8px; background: var(--danger); color: white; font-size: 11px; padding: 2px 6px; border-radius: 10px; font-weight: bold; display: none; }
 
-    /* 주소 입력 필드 스타일 */
-    .addr-input-box {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-    .addr-row {
-        display: flex;
-        gap: 10px;
-    }
+    /* 탭 스타일 */
+    .shop-tabs { display: flex; justify-content: center; gap: 20px; margin: 30px 0; border-bottom: 2px solid var(--border); }
+    .tab-btn { padding: 15px 40px; border: none; background: none; font-size: 18px; font-weight: 800; cursor: pointer; color: #94a3b8; transition: 0.3s; }
+    .tab-btn.active { color: var(--primary); border-bottom: 4px solid var(--primary); }
 
-    /* 장바구니 리스트 박스 */
-    .cart-item-summary {
-        display: flex;
-        justify-content: space-between;
-        padding: 12px;
-        background: white;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        border: 1px solid var(--border);
-    }
+    /* 수량 조절 버튼 */
+    .qty-btn { width: 28px; height: 28px; border: 1px solid var(--border); background: white; cursor: pointer; border-radius: 4px; font-weight: bold; }
+    .qty-input { width: 45px; height: 28px; text-align: center; border: 1px solid var(--border); border-radius: 4px; margin: 0 2px; }
 </style>
+
+<!-- 플로팅 버튼 -->
+<div class="floating-cart" onclick="switchView('cart')">
+    🛒<span id="float-badge" class="badge-count">0</span>
+</div>
 
 <header class="topbar">
     <a class="brand" href="/">
@@ -91,7 +57,7 @@
     </a>
     <nav class="nav">
         {% if current_user %}
-            <span class="user-greeting"><b>{{ current_user.username }}</b>님 환영합니다!</span>
+            <span class="user-greeting" style="color:white;"><b>{{ current_user.username }}</b>님</span>
             <a href="/auth/mypage">마이페이지</a>
             <form action="/auth/logout/form" method="post" style="display:inline;">
                 <button class="nav-link" type="submit">로그아웃</button>
@@ -100,10 +66,16 @@
             <a href="/auth/login">로그인</a>
             <a href="/auth/register" class="btn btn-primary" style="color:white;">회원가입</a>
         {% endif %}
+        <div class="nav-cart-wrapper">
+            <button onclick="switchView('cart')" style="background:none; border:none; color:white; font-weight:800; cursor:pointer; position:relative;">
+                장바구니/주문 <span id="nav-badge" class="badge-count">0</span>
+            </button>
+        </div>
     </nav>
 </header>
 
-<section class="hero">
+<!-- [복구] 상단 홍보 문구 섹션 (Hero) -->
+<section id="hero-section" class="hero">
     <div class="hero-copy">
         <span class="eyebrow">오늘 주문, 내일 차갑게 도착</span>
         <h1>식사, 간식을 든든하게 채우는 한 끼</h1>
@@ -118,78 +90,79 @@
 
 <main>
     <nav class="shop-tabs">
-        <button id="tab-p-btn" class="tab-btn active" onclick="switchView('p')">상품 쇼핑</button>
-        <button id="tab-c-btn" class="tab-btn" onclick="switchView('c')">장바구니/주문</button>
+        <button id="tab-all" class="tab-btn active" onclick="switchView('all')">상품 쇼핑</button>
+        <button id="tab-sale" class="tab-btn" onclick="switchView('sale')">할인 상품</button>
+        <button id="tab-new" class="tab-btn" onclick="switchView('new')">신규 상품</button>
     </nav>
 
     <section id="product-section">
-        <div id="product-main-grid" class="products">
-            </div>
-        <div id="product-detail-view" class="product-page" hidden>
-            </div>
+        <div id="product-main-grid" class="products"></div>
+        <div id="product-detail-view" class="product-page" hidden></div>
     </section>
 
     <section id="order-section" hidden>
-        <div class="shop-layout">
-            <div class="order-summary">
-                <h3>🛒 내 장바구니</h3>
-                <div id="cart-render-area" style="margin: 20px 0;">
-                    <p class="empty">장바구니가 비어있습니다.</p>
-                </div>
-                <hr>
-                <div class="summary-row total"><span>총 결제 금액</span><strong id="final-price-tag">0원</strong></div>
-            </div>
+        <div class="shop-layout" style="display:block; max-width:1100px; margin:0 auto;">
+            <div class="order-summary" style="margin-bottom:50px;">
+                <h3 style="margin-bottom:20px;">🛒 장바구니 담긴 상품</h3>
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>이미지</th>
+                            <th>상품정보</th>
+                            <th>판매가</th>
+                            <th>수량</th>
+                            <th>배송비</th>
+                            <th>합계</th>
+                            <th>삭제</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-table-body"></tbody>
+                </table>
 
-            <form class="order-form" id="order-final-form">
-                <h3>🚚 배송 정보</h3>
-                <div class="field">
-                    <label>수령인</label>
-                    <input type="text" id="buyer-name-input" value="{{ current_user.username if current_user else '' }}" required>
-                </div>
-                <div class="field">
-                    <label>배송지 주소</label>
-                    <div class="addr-input-box">
-                        <div class="addr-row">
-                            <input type="text" id="post-code-field" readonly placeholder="우편번호" style="width:120px;">
-                            <button type="button" class="btn btn-ghost" onclick="openDaumPost()">주소 검색</button>
-                        </div>
-                        <input type="text" id="addr-base-field" readonly placeholder="기본 주소 (검색 시 자동 입력)" required>
+                <div class="cart-total-box">
+                    <div class="total-item">
+                        <span>총 상품금액</span>
+                        <strong id="sum-product-price">0원</strong>
+                    </div>
+                    <div class="total-item">
+                        <span>배송비 (3만 원 이상 무료)</span>
+                        <strong id="sum-delivery-fee">+0원</strong>
+                    </div>
+                    <div class="total-item">
+                        <span>최종 결제 예정금액</span>
+                        <strong id="sum-total-price" style="color:var(--danger);">0원</strong>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%; height:60px; font-size:18px;">결제 및 주문하기</button>
+            </div>
+
+            <form class="order-form" id="order-final-form" style="background:#fff; padding:40px; border:1px solid var(--border); border-radius:12px;">
+                <h3 style="border-bottom:2px solid var(--secondary); padding-bottom:15px; margin-bottom:25px;">🚚 배송지 정보</h3>
+                <div class="field" style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">받는 분 성함</label>
+                    <input type="text" id="receiver-name" placeholder="성함을 입력해 주세요" required style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                </div>
+                <div class="field" style="margin-bottom:20px;">
+                    <label style="display:block; font-weight:bold; margin-bottom:8px;">배송 주소</label>
+                    <div style="display:flex; gap:8px; margin-bottom:8px;">
+                        <input type="text" id="post-code-field" readonly placeholder="우편번호" style="width:150px; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                        <button type="button" class="btn btn-ghost" onclick="openDaumPost()">주소 찾기</button>
+                    </div>
+                    <input type="text" id="addr-base-field" readonly placeholder="기본 주소" required style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; height:65px; font-size:20px; font-weight:bold;">주문 결제하기</button>
             </form>
         </div>
     </section>
 
     <section class="features">
-        <article class="feature">
-            <div class="feature-icon">01</div>
-            <h3>콜드체인 배송</h3>
-            <p>출고부터 문 앞까지 냉동 상태를 유지하는 전용 보냉 포장으로 보냅니다.</p>
-        </article>
-        <article class="feature">
-            <div class="feature-icon">02</div>
-            <h3>간편한 재구매</h3>
-            <p>자주 찾는 메뉴를 중심으로 구성해 장보기 시간을 획기적으로 줄여줍니다.</p>
-        </article>
-        <article class="feature">
-            <div class="feature-icon">03</div>
-            <h3>선별 입고</h3>
-            <p>보관 온도와 유통기한을 매일 확인한 검증된 상품만 판매합니다.</p>
-        </article>
+        <article class="feature"><div class="feature-icon">01</div><h3>콜드체인 배송</h3><p>전용 보냉 포장 시스템</p></article>
+        <article class="feature"><div class="feature-icon">02</div><h3>간편한 재구매</h3><p>단골 메뉴 간편 구성</p></article>
+        <article class="feature"><div class="feature-icon">03</div><h3>선별 입고</h3><p>매일 확인하는 유통기한</p></article>
     </section>
 </main>
 
-<footer>
-    <span>글로벌프레시 냉동식품 전문몰</span>
-    <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
-</footer>
-
 <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
 <script>
-    const IS_LOGGED_IN = {{ 'true' if is_logged_in else 'false' }};
-    
-    // 1. 상품 데이터 및 이미지 매칭 로직
     const products = [
         {% for p in products %}
         {
@@ -215,25 +188,31 @@
     ];
 
     const cart = new Map();
+    let currentDetailQty = 1;
 
-    // 2. 페이지 로드 시 자동 주소 입력 (우편번호 + 통합 주소)
-    window.onload = () => {
-        const lastFullAddr = "{{ last_address }}";
-        if (lastFullAddr) {
-            const match = lastFullAddr.match(/^\((\d+)\)\s*(.*)$/);
-            if (match) {
-                document.getElementById('post-code-field').value = match[1];
-                document.getElementById('addr-base-field').value = match[2];
-            }
-        }
-        renderProductGrid();
-    };
+    window.onload = () => { renderProductGrid(); };
 
     function switchView(mode) {
-        document.getElementById('product-section').hidden = (mode !== 'p');
-        document.getElementById('order-section').hidden = (mode !== 'c');
-        document.getElementById('tab-p-btn').classList.toggle('active', mode === 'p');
-        document.getElementById('tab-c-btn').classList.toggle('active', mode === 'c');
+        const prodSec = document.getElementById('product-section');
+        const ordSec = document.getElementById('order-section');
+        const heroSec = document.getElementById('hero-section');
+        
+        if (mode === 'cart') {
+            prodSec.hidden = true;
+            ordSec.hidden = false;
+            if(heroSec) heroSec.style.display = 'none'; // 장바구니일 때 홍보문구 숨김(선택사항)
+            updateCartUI();
+        } else {
+            prodSec.hidden = false;
+            ordSec.hidden = true;
+            if(heroSec) heroSec.style.display = 'block';
+            document.getElementById('product-main-grid').hidden = false;
+            document.getElementById('product-detail-view').hidden = true;
+            ['all', 'sale', 'new'].forEach(m => {
+                const btn = document.getElementById(`tab-${m}`);
+                if(btn) btn.classList.toggle('active', m === mode);
+            });
+        }
     }
 
     function renderProductGrid() {
@@ -242,7 +221,7 @@
                 <div class="product-media"><img src="${p.img}" class="product-photo"></div>
                 <div class="product-body">
                     <h3>${p.name}</h3>
-                    <p>${p.price.toLocaleString()}원 (재고: ${p.stock}개)</p>
+                    <p>${p.price.toLocaleString()}원</p>
                     <div class="product-bottom"><button class="view-product">상세보기</button></div>
                 </div>
             </article>
@@ -251,20 +230,28 @@
 
     function showDetail(id) {
         const p = products.find(x => x.id === id);
+        currentDetailQty = 1;
         const detail = document.getElementById('product-detail-view');
         document.getElementById('product-main-grid').hidden = true;
         detail.hidden = false;
+        
         detail.innerHTML = `
-            <div class="product-detail">
-                <div class="detail-media"><img src="${p.img}" style="width:100%; border-radius:12px;"></div>
-                <div class="detail-body">
+            <div class="product-detail" style="display:flex; gap:40px; padding:40px; background:#fff; border-radius:12px;">
+                <div style="flex:1;"><img src="${p.img}" style="width:100%; border-radius:12px;"></div>
+                <div style="flex:1;">
                     <button class="btn btn-ghost" onclick="closeDetail()">← 뒤로가기</button>
-                    <h2>${p.name}</h2>
-                    <p class="price" style="font-size:32px; color:var(--primary); font-weight:800;">${p.price.toLocaleString()}원</p>
-                    <div class="detail-actions">
-                        <button class="btn btn-ghost btn-large" onclick="handleCartAction('${p.id}', false)">장바구니 담기</button>
-                        <button class="btn btn-primary btn-large" onclick="handleCartAction('${p.id}', true)">바로 구매하기</button>
+                    <h2 style="margin:20px 0;">${p.name}</h2>
+                    <p style="font-size:24px; color:var(--primary); font-weight:800;">${p.price.toLocaleString()}원</p>
+                    <div class="qty-section" style="margin: 20px 0; padding: 15px; background: #f8fafc; border-radius: 8px;">
+                        <strong>수량</strong>
+                        <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
+                            <button class="qty-btn" onclick="updateQtyBtn(-1, ${p.stock})">-</button>
+                            <input type="number" id="detail-qty-input" class="qty-input" value="1" onchange="validateQtyInput(this, ${p.stock})">
+                            <button class="qty-btn" onclick="updateQtyBtn(1, ${p.stock})">+</button>
+                        </div>
                     </div>
+                    <button class="btn btn-primary" onclick="handleCartAction('${p.id}', 'add')" style="width:100%; padding:15px; margin-bottom:10px;">장바구니 담기</button>
+                    <button class="btn btn-ghost" onclick="handleCartAction('${p.id}', 'direct')" style="width:100%; padding:15px;">바로 구매하기</button>
                 </div>
             </div>
         `;
@@ -275,84 +262,97 @@
         document.getElementById('product-detail-view').hidden = true;
     }
 
-    // 3. 장바구니 및 '바로 구매' (로그인 체크 포함) 로직
-    function handleCartAction(id, isDirect) {
-        if (isDirect && !IS_LOGGED_IN) {
-            alert('주문을 위해 로그인이 필요합니다.');
-            location.href = '/auth/login';
-            return;
-        }
+    function updateQtyBtn(delta, stock) {
+        const input = document.getElementById('detail-qty-input');
+        let next = parseInt(input.value) + delta;
+        if (next >= 1 && next <= stock) { input.value = next; currentDetailQty = next; }
+    }
 
+    function validateQtyInput(el, stock) {
+        let val = parseInt(el.value);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > stock) val = stock;
+        el.value = val;
+        currentDetailQty = val;
+    }
+
+    function handleCartAction(id, mode) {
         const p = products.find(x => x.id === id);
-        if (p.stock <= 0) return alert("현재 품절된 상품입니다.");
-
-        const item = cart.get(id) || { ...p, count: 0 };
-        cart.set(id, { ...item, count: item.count + 1 });
-        
+        const existing = cart.get(id) || { ...p, count: 0 };
+        if (existing.count + currentDetailQty > p.stock) { alert('재고가 부족합니다.'); return; }
+        cart.set(id, { ...existing, count: existing.count + currentDetailQty });
         updateCartUI();
-        if (isDirect) switchView('c');
+        if (mode === 'direct') switchView('cart');
         else alert('장바구니에 담겼습니다.');
     }
 
     function updateCartUI() {
-        const list = document.getElementById('cart-render-area');
+        const tbody = document.getElementById('cart-table-body');
         const items = [...cart.values()];
-        if (items.length === 0) {
-            list.innerHTML = '<p class="empty">장바구니가 비어있습니다.</p>';
-        } else {
-            list.innerHTML = items.map(i => `
-                <div class="cart-item-summary">
-                    <span><b>${i.name}</b> (${i.count}개)</span>
-                    <button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer;">삭제</button>
-                </div>
-            `).join('');
+        const count = items.length;
+        
+        [document.getElementById('nav-badge'), document.getElementById('float-badge')].forEach(b => {
+            if(b) { b.innerText = count; b.style.display = count > 0 ? 'block' : 'none'; }
+        });
+
+        if (count === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="padding:50px; color:#94a3b8;">장바구니가 비어있습니다.</td></tr>';
+            renderSummary(0);
+            return;
         }
-        const sub = items.reduce((s, i) => s + (i.price * i.count), 0);
-        const total = sub + (sub >= 30000 || sub === 0 ? 0 : 3000);
-        document.getElementById('final-price-tag').innerText = total.toLocaleString() + '원';
+
+        tbody.innerHTML = items.map(i => `
+            <tr>
+                <td><img src="${i.img}" class="cart-img"></td>
+                <td class="cart-info-name">${i.name}</td>
+                <td>${i.price.toLocaleString()}원</td>
+                <td>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:2px;">
+                        <button class="qty-btn" onclick="changeCartQty('${i.id}', -1)">-</button>
+                        <input type="number" class="qty-input" value="${i.count}" onchange="directCartQty('${i.id}', this.value, ${i.stock})">
+                        <button class="qty-btn" onclick="changeCartQty('${i.id}', 1)">+</button>
+                    </div>
+                </td>
+                <td>기본배송</td>
+                <td style="font-weight:bold;">${(i.price * i.count).toLocaleString()}원</td>
+                <td><button onclick="cart.delete('${i.id}'); updateCartUI();" style="color:red; background:none; border:none; cursor:pointer;">✕</button></td>
+            </tr>
+        `).join('');
+
+        const subtotal = items.reduce((s, i) => s + (i.price * i.count), 0);
+        renderSummary(subtotal);
+    }
+
+    function renderSummary(subtotal) {
+        const deliveryFee = (subtotal >= 30000 || subtotal === 0) ? 0 : 3000;
+        const total = subtotal + deliveryFee;
+
+        document.getElementById('sum-product-price').innerText = subtotal.toLocaleString() + '원';
+        document.getElementById('sum-delivery-fee').innerText = (deliveryFee > 0 ? '+' : '') + deliveryFee.toLocaleString() + '원';
+        document.getElementById('sum-total-price').innerText = total.toLocaleString() + '원';
+    }
+
+    function changeCartQty(id, delta) {
+        const item = cart.get(id);
+        const next = item.count + delta;
+        if (next >= 1 && next <= item.stock) { item.count = next; updateCartUI(); }
+    }
+
+    function directCartQty(id, val, stock) {
+        let next = parseInt(val);
+        if (isNaN(next) || next < 1) next = 1;
+        if (next > stock) next = stock;
+        cart.get(id).count = next;
+        updateCartUI();
     }
 
     function openDaumPost() {
         new daum.Postcode({
             oncomplete: (data) => {
                 document.getElementById('post-code-field').value = data.zonecode;
-                let addr = data.roadAddress;
-                let extra = '';
-                if(data.bname !== '') extra += data.bname;
-                if(data.buildingName !== '') extra += (extra !== '' ? ', ' + data.buildingName : data.buildingName);
-                // 주소와 상세항목을 합쳐서 하나의 필드(addr-base-field)에 입력
-                document.getElementById('addr-base-field').value = addr + (extra !== '' ? ' (' + extra + ')' : '');
+                document.getElementById('addr-base-field').value = data.roadAddress;
             }
         }).open();
     }
-
-    document.getElementById('order-final-form').onsubmit = async (e) => {
-        e.preventDefault();
-        if (cart.size === 0) return alert('장바구니에 상품을 담아주세요.');
-
-        const fullAddr = `(${document.getElementById('post-code-field').value}) ${document.getElementById('addr-base-field').value}`;
-
-        const res = await fetch('/product/order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                item: Object.fromEntries([...cart.entries()].map(([id, d]) => [id, d.count])),
-                address: fullAddr
-            })
-        });
-
-        if (res.status === 401) {
-            alert('로그인이 만료되었습니다.');
-            location.href = '/auth/login';
-            return;
-        }
-
-        if (res.ok) {
-            alert('주문이 성공적으로 접수되었습니다!');
-            location.reload();
-        } else {
-            alert('주문 처리 중 오류가 발생했습니다.');
-        }
-    };
 </script>
 {% endblock %}
