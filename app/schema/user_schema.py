@@ -10,6 +10,7 @@ class UserCreateRequest(BaseModel):
     nickname: str
     gender: str | None = None
     birth_date: date | None = None
+    address: str | None = None
 
     @field_validator("password")
     def password_min_length(cls, v):
@@ -33,6 +34,7 @@ class UserCreateRequest(BaseModel):
         if v not in gender_map:
             raise ValueError("Gender must be 남 or 여")
         return gender_map[v]
+
 
 class UserResponse(BaseModel):
     id: uuid.UUID

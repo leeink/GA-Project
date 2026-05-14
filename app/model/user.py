@@ -7,6 +7,7 @@ from sqlalchemy import String, Boolean, DateTime, Date
 
 from core.database import Base
 
+
 class User(Base):
     __tablename__ = "siteuser"
 
@@ -21,3 +22,4 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     gender: Mapped[str] = mapped_column(String, nullable=False)
     birth_date: Mapped[date] = mapped_column(Date, nullable=True)
+    address: Mapped[str | None] = mapped_column(String, nullable=True)

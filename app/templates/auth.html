@@ -56,6 +56,24 @@
                     <option value="여" {{ 'selected' if gender == '여' else '' }}>여</option>
                 </select>
             </div>
+
+            <div class="field">
+                <label for="postcode">주소</label>
+                <div style="display:flex; gap:8px;">
+                    <input id="postcode" name="postcode" type="text" value="{{ postcode or '' }}" placeholder="우편번호 예: 21980" readonly required>
+                    <button class="btn btn-ghost" type="button" onclick="openDaumPost()" style="white-space:nowrap;">주소 찾기</button>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="baseAddress">기본 주소</label>
+                <input id="baseAddress" name="base_address" type="text" value="{{ base_address or '' }}" placeholder="예: 인천 연수구 송도과학로 16번길 33-4" readonly required>
+            </div>
+
+            <div class="field">
+                <label for="detailAddress">상세 주소</label>
+                <input id="detailAddress" name="detail_address" type="text" value="{{ detail_address or '' }}" autocomplete="address-line2" placeholder="예: 101동 202호" required>
+            </div>
             {% endif %}
 
             <div class="field">
@@ -80,4 +98,19 @@
     <span>글로벌프레시 냉동식품 전문몰</span>
     <span>고객센터 1588-0000 · 평일 09:00-18:00</span>
 </footer>
+
+{% if is_register %}
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script>
+    function openDaumPost() {
+        new daum.Postcode({
+            oncomplete: (data) => {
+                document.getElementById('postcode').value = data.zonecode;
+                document.getElementById('baseAddress').value = data.roadAddress || data.jibunAddress;
+                document.getElementById('detailAddress').focus();
+            }
+        }).open();
+    }
+</script>
+{% endif %}
 {% endblock %}

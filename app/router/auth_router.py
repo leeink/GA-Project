@@ -24,6 +24,9 @@ def render_auth_page(
         nickname: str = "",
         gender: str = "",
         birth_date: str = "",
+        postcode: str = "",
+        base_address: str = "",
+        detail_address: str = "",
         status_code: int = 200):
     return templates.TemplateResponse(
         request,
@@ -35,6 +38,9 @@ def render_auth_page(
             "nickname": nickname,
             "gender": gender,
             "birth_date": birth_date,
+            "postcode": postcode,
+            "base_address": base_address,
+            "detail_address": detail_address,
         },
         status_code=status_code,
     )
@@ -53,16 +59,23 @@ async def register_form(
         nickname: str = Form(...),
         gender: str = Form(...),
         birth_date: str = Form(...),
+        postcode: str = Form(...),
+        base_address: str = Form(...),
+        detail_address: str = Form(...),
         db: AsyncSession = Depends(get_db)):
     try:
+        address = f"{postcode}||{base_address}||{detail_address}"
+
         data = UserCreateRequest(
             email=email,
             password=password,
             nickname=nickname,
             gender=gender,
             birth_date=birth_date,
+            address=address,
         )
         await create_user(db, data)
+
     except ValidationError as exc:
         message = exc.errors()[0].get("msg", "입력값을 다시 확인해 주세요.")
         return render_auth_page(
@@ -73,11 +86,27 @@ async def register_form(
             nickname,
             gender,
             birth_date,
+            postcode,
+            base_address,
+            detail_address,
             status.HTTP_400_BAD_REQUEST,
         )
+
     except HTTPException as exc:
         message = "이미 가입된 이메일입니다." if exc.status_code == status.HTTP_409_CONFLICT else str(exc.detail)
-        return render_auth_page(request, "register", message, email, nickname, gender, birth_date, exc.status_code)
+        return render_auth_page(
+            request,
+            "register",
+            message,
+            email,
+            nickname,
+            gender,
+            birth_date,
+            postcode,
+            base_address,
+            detail_address,
+            exc.status_code,
+        )
 
     return RedirectResponse(url="/auth/login?registered=1", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -198,11 +227,13 @@ async def logout_form(request: Request, db: AsyncSession = Depends(get_db)):
     response.delete_cookie("refresh_token")
     return response
 
+
 @router.post("/register",
              response_model=UserResponse,
              status_code=201, summary="Register a new user")
 async def register(data: UserCreateRequest, db: AsyncSession = Depends(get_db)):
     return await create_user(db, data)
+
 
 @router.post("/login",
              response_model=TokenResponse,
@@ -212,11 +243,13 @@ async def login_route(
         db: AsyncSession = Depends(get_db)):
     return await login(db, data)
 
+
 @router.post("/refresh",
              response_model=TokenResponse,
              summary="Refresh access token")
 async def refresh(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
     return await refresh_token(db, data.refresh_token)
+
 
 @router.post("/logout", status_code=204, summary="logout")
 async def logout_route(data: LogoutRequest, db: AsyncSession = Depends(get_db)):

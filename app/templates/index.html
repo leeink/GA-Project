@@ -3,6 +3,12 @@
 {% block title %}글로벌프레시존 | 냉동식품 전문몰{% endblock %}
 
 {% block content %}
+{% set saved_address = current_user.address if current_user and current_user.address else "" %}
+{% set address_parts = saved_address.split("||") if "||" in saved_address else [] %}
+{% set saved_postcode = address_parts[0] if address_parts|length > 0 else "" %}
+{% set saved_base_address = address_parts[1] if address_parts|length > 1 else saved_address %}
+{% set saved_detail_address = address_parts[2] if address_parts|length > 2 else "" %}
+
 <style>
     :root {
         --primary: #10b981;
@@ -134,6 +140,36 @@
         right: -12px;
         color: #475569;
     }
+        /* 상단바와 히어로 이미지 겹침 방지 */
+    .topbar {
+        position: relative !important;
+        z-index: 3000 !important;
+    }
+
+    #hero-section {
+        position: relative !important;
+        z-index: 1 !important;
+        overflow: hidden !important;
+        margin-top: 0 !important;
+        padding-top: 60px !important;
+    }
+
+    #hero-section > div:last-child {
+        position: relative !important;
+        z-index: 1 !important;
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        transform: none !important;
+    }
+
+    #hero-slider-img {
+        display: block !important;
+        position: relative !important;
+        z-index: 1 !important;
+        margin-top: 0 !important;
+        transform: none !important;
+    }
+
 </style>
 
 <div id="promoPopup" class="promo-popup">
@@ -242,23 +278,25 @@
                 
                 <div class="field" style="margin-bottom:20px;">
                     <label style="display:block; font-weight:bold; margin-bottom:8px;">배송 주소</label>
+
                     <div style="display:flex; gap:8px; margin-bottom:8px;">
                         <input type="text" id="post-code-field" readonly 
-                               value="{% if current_user %}{{ current_user.zipcode or current_user.postcode or current_user.zip_code or '' }}{% endif %}" 
+                               value="{{ saved_postcode }}"
                                placeholder="우편번호" 
                                style="width:150px; padding:12px; border:1px solid var(--border); border-radius:6px;">
                         <button type="button" class="btn btn-ghost" onclick="openDaumPost()">주소 찾기</button>
                     </div>
-                    <input type="text" id="addr-base-field" readonly 
-                           value="{% if current_user %}{{ current_user.address or current_user.base_address or '' }}{% endif %}" 
+
+                    <input type="text" id="addr-base-field"
+                           value="{{ saved_base_address }}"
                            placeholder="기본 주소" required 
                            style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
                 </div>
                 
                 <div class="field" style="margin-bottom:20px;">
                     <input type="text" id="addr-detail-field" 
-                           value="{% if current_user %}{{ current_user.detail_address or current_user.address_detail or '' }}{% endif %}" 
-                           placeholder="상세 주소를 입력해 주세요 (예: 101동 202호)" required 
+                           value="{{ saved_detail_address }}"
+                           placeholder="상세 주소를 입력해 주세요 (예: 101동 202호)" 
                            style="width:100%; padding:12px; border:1px solid var(--border); border-radius:6px;">
                 </div>
 
@@ -713,13 +751,18 @@
             return;
         }
 
+        const postcode = document.getElementById('post-code-field').value.trim();
         const baseAddress = document.getElementById('addr-base-field').value.trim();
         const detailAddress = document.getElementById('addr-detail-field').value.trim();
 
-        if (!baseAddress || !detailAddress) {
+        if (!baseAddress) {
             alert('배송 주소를 입력해 주세요.');
             return;
         }
+
+        const fullAddress = postcode
+            ? `${postcode}||${baseAddress}||${detailAddress}`
+            : baseAddress;
 
         const orderItems = {};
         items.forEach(item => {
@@ -734,7 +777,7 @@
             credentials: 'include',
             body: JSON.stringify({
                 item: orderItems,
-                address: `${baseAddress} ${detailAddress}`,
+                address: fullAddress,
             }),
         });
 

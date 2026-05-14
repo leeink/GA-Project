@@ -8,12 +8,14 @@ from core.exceptions import *
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+
 async def find_all_user(db: AsyncSession) -> Sequence[Any]:
     result = await db.execute(
         select(User)
     )
 
     return result.scalars().all()
+
 
 async def find_user_by_id(db: AsyncSession, user_id: str | uuid.UUID) -> User | None:
     result = await db.execute(
@@ -23,6 +25,7 @@ async def find_user_by_id(db: AsyncSession, user_id: str | uuid.UUID) -> User | 
 
     return result.scalar_one_or_none()
 
+
 async def find_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(
         select(User)
@@ -31,17 +34,19 @@ async def find_user_by_email(db: AsyncSession, email: str) -> User | None:
 
     return result.scalar_one_or_none()
 
+
 async def create_user(db: AsyncSession, data: UserCreateRequest) -> User:
     # check duplicate email
     if await find_user_by_email(db, data.email):
         raise ConflictException("Email already exists")
 
     user = User(
-        email = data.email,
-        password_hash = hash_password(data.password),
-        nickname = data.nickname,
-        gender = data.gender or "m",
-        birth_date = data.birth_date,
+        email=data.email,
+        password_hash=hash_password(data.password),
+        nickname=data.nickname,
+        gender=data.gender or "m",
+        birth_date=data.birth_date,
+        address=data.address,
     )
 
     db.add(user)
