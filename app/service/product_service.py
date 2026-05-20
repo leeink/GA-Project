@@ -1,9 +1,10 @@
 import uuid
-from sqlalchemy import select, insert, func, desc
+from sqlalchemy import select, insert, func, desc, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from model.product import Product
 from model.sales_record import SalesRecord
 from model.product_stock import ProductStock
+from model.cart import Cart
 
 # 모든 상품 및 가용 재고 조회
 async def find_all_product(db: AsyncSession):
@@ -42,5 +43,6 @@ async def product_order(db: AsyncSession, dto, user_id: uuid.UUID):
             "sales_price": product.cost * requested_qty, "address": dto.address
         })
     await db.execute(insert(SalesRecord).values(sales_records))
+    await db.execute(delete(Cart).where(Cart.user_id == user_id))
     await db.commit()
     return {"saved": True}

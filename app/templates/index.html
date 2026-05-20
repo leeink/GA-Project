@@ -170,6 +170,56 @@
         transform: none !important;
     }
 
+    .notification-popup {
+        position: fixed;
+        right: 30px;
+        bottom: 110px;
+        width: 340px;
+        max-width: calc(100% - 40px);
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+        z-index: 10000;
+        display: none;
+        overflow: hidden;
+    }
+
+    .notification-popup-header {
+        padding: 14px 16px;
+        background: var(--secondary);
+        color: white;
+        font-weight: 800;
+    }
+
+    .notification-popup-body {
+        padding: 16px;
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.6;
+        white-space: pre-line;
+    }
+
+    .notification-popup-footer {
+        display: flex;
+        justify-content: flex-end;
+        padding: 12px 16px;
+        background: #f8fafc;
+        border-top: 1px solid var(--border);
+    }
+
+    .notification-popup-footer button {
+        border: none;
+        background: var(--primary);
+        color: white;
+        padding: 8px 14px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+
+
 </style>
 
 <div id="promoPopup" class="promo-popup">
@@ -181,6 +231,15 @@
         <button onclick="closePromoPopup()">[닫기]</button>
     </div>
 </div>
+
+<div id="notificationPopup" class="notification-popup">
+    <div class="notification-popup-header">알림</div>
+    <div id="notificationPopupBody" class="notification-popup-body"></div>
+    <div class="notification-popup-footer">
+        <button type="button" onclick="closeNotificationPopup()">확인</button>
+    </div>
+</div>
+
 
 <div class="floating-cart" onclick="switchView('cart')">
     🛒<span id="float-badge" class="badge-count">0</span>
@@ -418,11 +477,13 @@
         renderProductGrid(); 
         checkPromoPopup();
 
-        if (IS_LOGGED_IN) {
-            await loadCartFromDB();
-        } else {
-            updateCartUI();
-        }
+    if (IS_LOGGED_IN) {
+        await loadCartFromDB();
+        await loadUnreadNotifications();
+    } else {
+        updateCartUI();
+    }
+
     };
 
     function getProductById(productId) {
@@ -807,5 +868,50 @@
             }
         }).open();
     }
+
+    let currentNotificationId = null;
+
+    async function loadUnreadNotifications() {
+        if (!IS_LOGGED_IN) return;
+
+        const popup = document.getElementById('notificationPopup');
+        if (popup && popup.style.display === 'block') return;
+
+        const res = await fetch('/api/notifications/unread', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        if (!res.ok) return;
+
+        const notifications = await res.json();
+        if (notifications.length === 0) return;
+
+        showNotificationPopup(notifications[0]);
+    }
+
+    function showNotificationPopup(notification) {
+        currentNotificationId = notification.id;
+
+        document.getElementById('notificationPopupBody').innerText = notification.message;
+        document.getElementById('notificationPopup').style.display = 'block';
+    }
+
+    async function closeNotificationPopup() {
+        document.getElementById('notificationPopup').style.display = 'none';
+
+        if (!currentNotificationId) return;
+
+        await fetch(`/api/notifications/${currentNotificationId}/read`, {
+            method: 'PATCH',
+            credentials: 'include',
+        });
+
+        currentNotificationId = null;
+
+        setTimeout(loadUnreadNotifications, 500);
+    }
+    setInterval(loadUnreadNotifications, 30000);
 </script>
+
 {% endblock %}

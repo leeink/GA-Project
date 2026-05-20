@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 
 from fastapi import HTTPException
 from sqlalchemy import delete, func, select
@@ -59,14 +60,18 @@ async def add_to_cart(
     if next_quantity > stock:
         raise HTTPException(status_code=400, detail="재고가 부족합니다.")
 
+    now = datetime.now(timezone.utc)
+
     if cart_item:
         cart_item.cart_quantity = next_quantity
+        cart_item.current_time = now
     else:
         db.add(
             Cart(
                 user_id=user_id,
                 product_id=product_id,
                 cart_quantity=quantity,
+                current_time=now,
             )
         )
 
@@ -96,6 +101,8 @@ async def update_cart_quantity(
         raise HTTPException(status_code=400, detail="재고가 부족합니다.")
 
     cart_item.cart_quantity = quantity
+    cart_item.current_time = datetime.now(timezone.utc)
+
     await db.flush()
     return await get_user_cart(db, user_id)
 
