@@ -13,7 +13,7 @@ router = APIRouter(prefix="/admin/detail", tags=["admin detail"])
 @router.get("/{year}", response_class=HTMLResponse)
 async def sales_record_detail(
     request: Request,
-    year: str = "2026",
+    year: int = 2026,
     db: AsyncSession = Depends(get_db),
 ):
     # ── [유지] 기존 상단 통계 데이터 로드 ──

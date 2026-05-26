@@ -92,13 +92,12 @@ async def find_yearly_total(db: AsyncSession, year: int) -> int:
 # 5. 연도 목록
 # ─────────────────────────────────────────
 async def find_available_years(db: AsyncSession) -> list[int]:
-    """매출 데이터가 있는 연도 목록 (내림차순)"""
+    year_col = func.extract("year", SalesRecord.sold_at).cast(Integer)
+
     result = await db.execute(
-        select(
-            func.extract("year", SalesRecord.sold_at).cast(Integer).label("year")
-        )
-        .group_by("year")
-        .order_by(func.extract("year", SalesRecord.sold_at).desc())
+        select(year_col.label("year"))
+        .group_by(year_col)      # label이 아닌 표현식 직접 참조
+        .order_by(year_col.desc())
     )
     return [row.year for row in result.all()]
 
