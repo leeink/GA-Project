@@ -31,7 +31,7 @@ from service.notification_service import (
 
 app = FastAPI()
 
-
+"""
 async def notification_worker():
     while True:
         # 장바구니 리마인드 알림 생성
@@ -69,7 +69,7 @@ async def notification_worker():
 @app.on_event("startup")
 async def start_notification_worker():
     asyncio.create_task(notification_worker())
-
+"""
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

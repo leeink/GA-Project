@@ -6,9 +6,19 @@ from core.config import settings
 engine = create_async_engine(
     settings.DATABASE_URL,
     echo=False,
-    pool_size = 10,
-    connect_args={"statement_cache_size": 0},
-    max_overflow=20,
+    pool_timeout=5,
+    pool_size = 20,
+    max_overflow=10,
+    pool_recycle=1800,
+    connect_args={
+        "timeout": 5,
+        "statement_cache_size": 0,
+        "server_settings": {
+            "statement_timeout": "3000",  # 3초 이상 걸리는 쿼리는 강제 종료
+            "idle_in_transaction_session_timeout": "7000" # 트랜잭션 열고 7초간 대기 시 종료
+        }
+    },
+    pool_pre_ping=True,
 )
 
 AsyncSessionLocal = async_sessionmaker(

@@ -1,5 +1,5 @@
-from datetime import date
-from sqlalchemy import select, func, cast, Integer, and_
+from datetime import datetime, timezone
+from sqlalchemy import select, func, cast, Integer, and_, TIMESTAMP
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from model.sales_record import SalesRecord
@@ -21,7 +21,10 @@ from model.product import Product
 # ─────────────────────────────────────────
 def _before_current_year():
     """당해연도 데이터 제외 — 매년 코드 수정 불필요"""
-    return SalesRecord.sold_at < date(date.today().year, 1, 1)
+    current_year_first_day = datetime(datetime.today().year, 1, 1, tzinfo=timezone.utc)
+
+    # 우변에 문자열이 아닌 datetime 객체가 들어가므로 asyncpg가 정상적으로 수용합니다.
+    return SalesRecord.sold_at < current_year_first_day
 
 
 # ─────────────────────────────────────────

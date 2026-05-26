@@ -53,13 +53,13 @@ async def create_cart_reminder_notifications(
     after_minutes: int = 60,
     repeat_minutes: int = 1440,
 ):
-    기준시간 = datetime.now(timezone.utc) - timedelta(minutes=after_minutes)
+    standard_time = datetime.now(timezone.utc) - timedelta(minutes=after_minutes)
 
     result = await db.execute(
         select(Cart)
         .options(selectinload(Cart.product))
         .where(Cart.current_time.is_not(None))
-        .where(Cart.current_time <= 기준시간)
+        .where(Cart.current_time <= standard_time)
     )
 
     cart_items = result.scalars().all()
