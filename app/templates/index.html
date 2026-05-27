@@ -686,7 +686,7 @@
     function updateCartUI() {
         const tbody = document.getElementById('cart-table-body');
         const items = [...cart.values()];
-        const count = items.reduce((sum, item) => sum + item.count, 0);
+        const count = items.length;
         
         [document.getElementById('nav-badge'), document.getElementById('float-badge')].forEach(b => {
             if (b) {

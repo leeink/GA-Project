@@ -75,7 +75,6 @@ async def product_order(db: AsyncSession, dto, user_id: uuid.UUID):
     result = await db.execute(
         select(Product)
         .where(Product.id.in_(product_ids))
-        .with_for_update()             # 동시 주문 race condition 방지
     )
     product_map = {p.id: p for p in result.scalars().all()}
 
