@@ -41,10 +41,16 @@ Request
 [Model]        ← SQLAlchemy ORM을 통해 DB 접근
   │
   ▼
-[Database]     ← 실제 DB (PostgreSQL 등)
+[Database]     ← 실제 DB (Supabase)
 ```
 
 **`core/`** 는 모든 레이어에서 공통으로 사용하는 모듈입니다.
+
+---
+
+## 🏛️ ERD
+
+![ERD](erd.jpg)
 
 ---
 
