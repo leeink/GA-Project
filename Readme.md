@@ -16,8 +16,10 @@ app/
 ├── router/                 # FastAPI 라우터 (엔드포인트 정의)
 ├── static/                 # 정적 파일 (CSS, JS, 이미지)
 ├── templates/              # Jinja2 HTML 템플릿
-└── main.py                 # 앱 진입점 (FastAPI 인스턴스, 라우터 등록)
+└── main.py                 # 앱 진입점 (FastAPI 인스턴스, 라우터 등록) 
 ```
+
+![ERD](1234.png)
 
 ---
 
