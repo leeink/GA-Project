@@ -19,7 +19,7 @@ app/
 └── main.py                 # 앱 진입점 (FastAPI 인스턴스, 라우터 등록) 
 ```
 
-![ERD](1234.png)
+![app](app.png)
 
 ---
 
@@ -48,7 +48,7 @@ Request
 
 **`core/`** 는 모든 레이어에서 공통으로 사용하는 모듈입니다.
 
-![ERD](gen4.png)
+![core](gen4.png)
 
 ---
 
