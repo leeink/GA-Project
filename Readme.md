@@ -60,8 +60,7 @@ Request
 ```
 
 **`core/`** 는 모든 레이어에서 공통으로 사용하는 모듈입니다.
-
-![core](gen4.png)
+![core](Architecture.jpg)
 
 ---
 
