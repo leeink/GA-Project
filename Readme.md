@@ -1,44 +1,26 @@
-# 🚀 FastAPI Project
+# 🚀 글로벌냉동식품 서비스
 
-FastAPI + Jinja2 템플릿 기반의 웹 애플리케이션입니다.  
-JWT 인증, 비동기 DB 연동, 서비스 레이어 분리 구조로 설계되었습니다.
+냉동식품 전문 온라인 쇼핑몰입니다.
+데이터베이스를 활용해 상품·재고·주문 데이터를 통합 관리하며,
+RPA를 통해 유통기한 임박 재고를 자동으로 파악해 담당자에게 알림을 발송하고,
+유통기한이 마감된 재고는 폐기 처분 및 이력 기록까지 전 과정을 자동화한 서비스입니다.
 
----
+## [🔄] Service Process
 
-## 📁 프로젝트 구조
-
-<table>
-<tr>
-<td width="62%" valign="top">
-
-<pre>
-<br><br>
-app/
-├── core/                   # 공통 핵심 모듈
-├── model/                  # SQLAlchemy ORM 모델
-├── schema/                 # Pydantic 스키마 (요청/응답 검증)
-├── service/                # 비즈니스 로직 레이어
-├── router/                 # FastAPI 라우터 (엔드포인트 정의)
-├── static/                 # 정적 파일 (CSS, JS, 이미지)
-├── templates/              # Jinja2 HTML 템플릿
-└── main.py                 # 앱 진입점 (FastAPI 인스턴스, 라우터 등록)
-<br><br>
-</pre>
-
-</td>
-<td width="38%" valign="top" align="center">
-
-<img src="./app.png" alt="프로젝트 폴더 구조" width="200" />
-
-</td>
-</tr>
-</table>
+| 서비스 프로세스              | 주요 처리 기능                           |
+|-----------------------|------------------------------------|
+| **회원 서비스**            | 회원가입, 로그인, JWT 인증 처리               |
+| **상품 조회**             | 메인페이지에서 상품 목록 조회                   |
+| **장바구니 조회**           | 회원인 경우 장바구니 담기 가능                  |
+| **상품 주문**             | 장바구니에 있는 상품 또는 상품 상세 페이지에서 바로 주문 가능 |
+| **관리자 페이지 판매, 수익 분석** | 관리자 페이지에서 데이터 시각화를 통한 수익 분석        |
+| **RPA 활용한 업무 자동화**    | 반복적인 업무(ex: 보고서 작성 후 메일 전송)들을 자동화  |
 
 ---
 
 ## 🏛️ 아키텍처 개요
 
-이 프로젝트는 **레이어드 아키텍처(Layered Architecture)** 를 따릅니다.
+![core](Architecture.jpg)
 
 ```
 Request
@@ -58,10 +40,6 @@ Request
   ▼
 [Database]     ← 실제 DB (Supabase)
 ```
-
-**`core/`** 는 모든 레이어에서 공통으로 사용하는 모듈입니다.
-
-![core](gen4.png)
 
 ---
 
@@ -112,6 +90,22 @@ Authorization: Bearer <access_token>
 | 토큰 발급 | 로그인 성공 시 Access Token 발급 |
 | 토큰 검증 | `core/auth.py`에서 처리 |
 | 보호 API | `Authorization` 헤더 필요 |
+
+---
+
+## 📁 프로젝트 구조
+
+```
+app/
+├── core/                   # 공통 핵심 모듈
+├── model/                  # SQLAlchemy ORM 모델
+├── schema/                 # Pydantic 스키마 (요청/응답 검증)
+├── service/                # 비즈니스 로직 레이어
+├── router/                 # FastAPI 라우터 (엔드포인트 정의)
+├── static/                 # 정적 파일 (CSS, JS, 이미지)
+├── templates/              # Jinja2 HTML 템플릿
+└── main.py                 # 앱 진입점 (FastAPI 인스턴스, 라우터 등록)
+```
 
 ---
 
